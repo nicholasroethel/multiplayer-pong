@@ -1,0 +1,5 @@
+webpongjs
+=========
+
+This is a small experiment using Node.js and sockjs to implement multi-client
+pong game.
