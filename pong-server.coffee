@@ -2,7 +2,7 @@
 sockjs = require 'sockjs'
 http = require 'http'
 
-pongConfig = {
+pongConfig =
     listen:
         addr: '0.0.0.0',
         port: 8089,
@@ -10,9 +10,8 @@ pongConfig = {
         pong: '/pong',
     update:
         interval: 100, # milliseconds
-}
 
-gameState = {
+gameState =
     ball:
         position: x: 0, y: 0
     blocks:
@@ -21,20 +20,17 @@ gameState = {
         right:
             height: 0
 
-}
-
-internalState = {
+internalState =
     intervalUpdaterId: null,
     clientConnections: {},
-}
-
-# Check wheter an object (dict) is "empty"
-isEmpty = (d) ->
-    return dictLength(d) == 0
 
 # Return the number of keys in an object (dict)
 dictLength = (d) ->
     return Object.keys(d).length
+
+# Check wheter an object (dict) is "empty"
+isEmpty = (d) ->
+    return dictLength(d) == 0
 
 sockServer = sockjs.createServer()
 sockServer.on 'connection', (conn) ->
