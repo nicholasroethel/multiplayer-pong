@@ -56,9 +56,10 @@ sockServer.on 'connection', (conn) ->
     # the clients in order to keep them syncrhnozied.
     broadcastState = ->
         updateMsg = 'State update ...'
-        console.log updateMsg
+        console.log gameState
+        msg = JSON.stringify(gameState)
         for cid, c of internalState.clientConnections
-            c.write updateMsg
+            c.write msg
 
     if !internalState.intervalUpdaterId?
         # Start the state updater
