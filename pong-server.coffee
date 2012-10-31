@@ -3,17 +3,23 @@
 sockjs = require 'sockjs'
 http = require 'http'
 
-config = {
-    listen: {
+pongConfig = {
+    listen:
         addr: '0.0.0.0',
         port: 8089,
-    },
-    prefix: {
+    prefix:
         pong: '/pong',
-    },
-    update: {
-        interval: 5,
-    }
+    update:
+        interval: 100, # milliseconds
+}
+
+gameState = {
+    ball:
+        position: x: 0, y: 0
+}
+
+internalState = {
+    intervalUpdaterId: null,
 }
 
 sockServer = sockjs.createServer()
@@ -23,7 +29,18 @@ sockServer.on 'connection', (conn) ->
         conn.write echoedMsg
         console.log "Sending back '#{echoedMsg}'"
     conn.on 'close', ->
+        console.log 'Connection closed'
+        if internalState.intervalUpdaterId?
+            console.log('Stopping interval updater ...')
+            clearInterval(internalState.intervalUpdaterId)
+            internalState.intervalUpdaterId = null
+            console.log('Stopped interval updater.')
+    # A periodic updater callback that sends the game state to the 
+    # clients in order to keep them syncrhnozied
+    broadcastState = ->
+        console.log('State update ...')
+    internalState.intervalUpdaterId = setInterval broadcastState, pongConfig.update.interval
 
 server = http.createServer()
-sockServer.installHandlers server, prefix: config.prefix.pong
-server.listen(config.listen.port, config.listen.addr)
+sockServer.installHandlers server, prefix: pongConfig.prefix.pong
+server.listen(pongConfig.listen.port, pongConfig.listen.addr)
