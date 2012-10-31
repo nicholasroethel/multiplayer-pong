@@ -36,7 +36,7 @@ isEmpty = (d) ->
 sockServer = sockjs.createServer()
 sockServer.on 'connection', (conn) ->
     # Add the new connection to the client connection "set"
-    internalState.clientConnections[conn] = null
+    internalState.clientConnections[conn.id] = conn
 
     conn.on 'data', (message) ->
         echoedMsg = "Echoed '#{message}'"
@@ -45,7 +45,7 @@ sockServer.on 'connection', (conn) ->
 
     conn.on 'close', ->
         console.log 'Connection closed'
-        delete internalState.clientConnections[conn]
+        delete internalState.clientConnections[conn.id]
         if isEmpty(internalState.clientConnections) and internalState.intervalUpdaterId?
             console.log 'Stopping interval updater ...'
             clearInterval internalState.intervalUpdaterId
@@ -57,8 +57,12 @@ sockServer.on 'connection', (conn) ->
     broadcastState = ->
         updateMsg = 'State update ...'
         console.log updateMsg
-        conn.write updateMsg
-    internalState.intervalUpdaterId = setInterval broadcastState, pongConfig.update.interval
+        for cid, c of internalState.clientConnections
+            c.write updateMsg
+
+    if !internalState.intervalUpdaterId?
+        # Start the state updater
+        internalState.intervalUpdaterId = setInterval broadcastState, pongConfig.update.interval
 
 server = http.createServer()
 sockServer.installHandlers server, prefix: pongConfig.prefix.pong
