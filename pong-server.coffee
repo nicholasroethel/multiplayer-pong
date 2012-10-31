@@ -3,9 +3,18 @@
 sockjs = require 'sockjs'
 http = require 'http'
 
-ADDR='0.0.0.0'
-PORT=8089
-PONG_PREFIX = '/pong'
+config = {
+    listen: {
+        addr: '0.0.0.0',
+        port: 8089,
+    },
+    prefix: {
+        pong: '/pong',
+    },
+    update: {
+        interval: 5,
+    }
+}
 
 sockServer = sockjs.createServer()
 sockServer.on 'connection', (conn) ->
@@ -16,5 +25,5 @@ sockServer.on 'connection', (conn) ->
     conn.on 'close', ->
 
 server = http.createServer()
-sockServer.installHandlers server, prefix: PONG_PREFIX
-server.listen(PORT, ADDR)
+sockServer.installHandlers server, prefix: config.prefix.pong
+server.listen(config.listen.port, config.listen.addr)
