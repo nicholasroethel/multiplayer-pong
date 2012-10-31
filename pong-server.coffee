@@ -15,10 +15,11 @@ gameState =
     ball:
         position: x: 0, y: 0
     blocks:
+        height: 20
         left:
-            height: 0
+            y: 0
         right:
-            height: 0
+            y: 0
 
 internalState =
     intervalUpdaterId: null,
