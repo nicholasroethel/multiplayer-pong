@@ -1,5 +1,4 @@
-# This is currently an echo server
-
+# This is still only an echo server
 sockjs = require 'sockjs'
 http = require 'http'
 
@@ -29,9 +28,13 @@ internalState = {
     clientConnections: {},
 }
 
-# Utility function to check wheter an object (dict) is "empty"
+# Check wheter an object (dict) is "empty"
 isEmpty = (d) ->
-    return Object.keys(d).length == 0
+    return dictLength(d) == 0
+
+# Return the number of keys in an object (dict)
+dictLength = (d) ->
+    return Object.keys(d).length
 
 sockServer = sockjs.createServer()
 sockServer.on 'connection', (conn) ->
