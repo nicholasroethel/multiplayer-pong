@@ -10,9 +10,11 @@ PONG_PREFIX = '/pong'
 sockServer = sockjs.createServer()
 sockServer.on 'connection', (conn) ->
     conn.on 'data', (message) ->
-        conn.write message
-    conn.on 'close', () ->
+        echoedMsg = "Echoed '#{message}'"
+        conn.write echoedMsg
+        console.log "Sending back '#{echoedMsg}'"
+    conn.on 'close', ->
 
 server = http.createServer()
-sockServer.installHandlers server, { prefix: PONG_PREFIX }
+sockServer.installHandlers server, prefix: PONG_PREFIX
 server.listen(PORT, ADDR)
