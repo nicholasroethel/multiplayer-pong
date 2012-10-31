@@ -55,7 +55,9 @@ sockServer.on 'connection', (conn) ->
     # The callback that will be called periodically to send the game state to
     # the clients in order to keep them syncrhnozied.
     broadcastState = ->
-        console.log 'State update ...'
+        updateMsg = 'State update ...'
+        console.log updateMsg
+        conn.write updateMsg
     internalState.intervalUpdaterId = setInterval broadcastState, pongConfig.update.interval
 
 server = http.createServer()
