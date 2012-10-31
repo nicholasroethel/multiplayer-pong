@@ -16,29 +16,46 @@ pongConfig = {
 gameState = {
     ball:
         position: x: 0, y: 0
+    blocks:
+        left:
+            height: 0
+        right:
+            height: 0
+
 }
 
 internalState = {
     intervalUpdaterId: null,
+    clientConnections: {},
 }
+
+# Utility function to check wheter an object (dict) is "empty"
+isEmpty = (d) ->
+    return Object.keys(d).length == 0
 
 sockServer = sockjs.createServer()
 sockServer.on 'connection', (conn) ->
+    # Add the new connection to the client connection "set"
+    internalState.clientConnections[conn] = null
+
     conn.on 'data', (message) ->
         echoedMsg = "Echoed '#{message}'"
         conn.write echoedMsg
         console.log "Sending back '#{echoedMsg}'"
+
     conn.on 'close', ->
         console.log 'Connection closed'
-        if internalState.intervalUpdaterId?
-            console.log('Stopping interval updater ...')
-            clearInterval(internalState.intervalUpdaterId)
+        delete internalState.clientConnections[conn]
+        if isEmpty(internalState.clientConnections) and internalState.intervalUpdaterId?
+            console.log 'Stopping interval updater ...'
+            clearInterval internalState.intervalUpdaterId
             internalState.intervalUpdaterId = null
-            console.log('Stopped interval updater.')
-    # A periodic updater callback that sends the game state to the 
-    # clients in order to keep them syncrhnozied
+            console.log 'Stopped interval updater.'
+
+    # The callback that will be called periodically to send the game state to
+    # the clients in order to keep them syncrhnozied.
     broadcastState = ->
-        console.log('State update ...')
+        console.log 'State update ...'
     internalState.intervalUpdaterId = setInterval broadcastState, pongConfig.update.interval
 
 server = http.createServer()
