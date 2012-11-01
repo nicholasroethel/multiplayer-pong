@@ -18,7 +18,7 @@
       sock = new SockJS "http://#{conf.server.addr}:#{conf.server.port}#{conf.server.prefix}"
 
       sock.onmessage = (e) ->
-        diff = Math.abs(e.data - (new Date).getTime())
+        diff = Math.abs(Number(e.data) - (new Date).getTime())
         console.log '[message]', diff
         if diff > conf.update.maxDrift
           console.log 'Want update'
@@ -35,7 +35,7 @@
   </head>
 
   <body>
-    <canvas id="paper" width="1900" height="1000">
+    <canvas id="board" width="1900" height="1000">
     Your browser needs to support canvas for this to work!
     </canvas>
   </body>
