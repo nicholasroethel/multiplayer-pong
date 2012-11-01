@@ -18,6 +18,14 @@ class PongServer
     @sockServer.on 'connection', this.onConnection
     @game = new PongGame
 
+  broadcast: (msg) =>
+    for cid, c of @clientConnections
+      c.write msg
+
+  listen: ->
+    @sockServer.installHandlers @server, prefix: @pongConfig.server.prefix
+    @server.listen @pongConfig.server.port, @pongConfig.server.addr
+
   onConnection: (conn) =>
     @clientConnections[conn.id] = conn
 
@@ -28,27 +36,10 @@ class PongServer
 
     this.setupUpdater()
 
-  setupUpdater: ->
-    if !@intervalUpdaterId?
-      console.log @pongConfig.update.interval
-      updater = =>
-        this.broadcast @game.state.testCount
-        @game.state.testCount += 1
-      # Start the state updater
-      @intervalUpdaterId = setInterval updater, @pongConfig.update.interval
-
   onData: (conn, msg) =>
     console.log "Got message #{msg} from #{conn.id}"
     if msg == 'update'
       conn.write @game.state.testCount
-
-  listen: ->
-    @sockServer.installHandlers @server, prefix: @pongConfig.server.prefix
-    @server.listen @pongConfig.server.port, @pongConfig.server.addr
-
-  broadcast: (msg) =>
-    for cid, c of @clientConnections
-      c.write msg
 
   onClose: (conn) =>
     console.log "Connection #{conn.id} closed, cleaning up"
@@ -57,6 +48,15 @@ class PongServer
       clearInterval @intervalUpdaterId
       @intervalUpdaterId = null
     console.log "Finished cleanup of closed connection #{conn.id}"
+
+  setupUpdater: ->
+    if !@intervalUpdaterId?
+      console.log @pongConfig.update.interval
+      updater = =>
+        this.broadcast @game.state.testCount
+        @game.state.testCount += 1
+      # Start the state updater
+      @intervalUpdaterId = setInterval updater, @pongConfig.update.interval
 
 main = ->
   console.log 'Starting Pong server...'
