@@ -1,5 +1,7 @@
 exports = window
 
+Message = exports.WebPongJSMessage
+
 class Client
 
   constructor: (@conf, @game) ->
@@ -10,7 +12,7 @@ class Client
     @sock = new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
 
     @sock.onmessage = (e) =>
-      msg = JSON.parse(e.data)
+      msg = Message.parse(e.data)
 
       switch msg.type
         when 'init'
@@ -23,10 +25,12 @@ class Client
       console.log '[message]', @initialDrift
       if @initialDrift > @conf.update.maxDrift
         console.log 'Want update'
-        @sock.send JSON.stringify type: 'update', data: ''
+        payload = new Message 'update'
+        @sock.send payload.stringify()
 
     @sock.onopen = =>
-      @sock.send JSON.stringify type: 'init', data: ''
+      payload = new Message 'init'
+      @sock.send payload.stringify type: 'init', data: ''
       @game.start()
 
     @sock.onclose = =>

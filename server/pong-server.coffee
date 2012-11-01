@@ -4,8 +4,10 @@ sockjs = require 'sockjs'
 pongGame = require '../common/game'
 config = require '../common/config'
 utils = require '../common/utils'
+message = require '../common/message'
 
 PongGame = pongGame.WebPongJSGame
+Message = message.WebPongJSMessage
 
 class PongServer
 
@@ -20,7 +22,7 @@ class PongServer
 
   broadcast: (type, msg) ->
     for cid, c of @clientConnections
-      c.write JSON.stringify type: type, data: msg
+      c.write (new Message type, msg).stringify()
 
   listen: ->
     @sockServer.installHandlers @server, prefix: @pongConfig.server.prefix
@@ -38,19 +40,13 @@ class PongServer
 
   onData: (conn, msg) =>
     console.log "Got message #{msg} from #{conn.id}"
-    msg = JSON.parse msg
+    msg = Message.parse msg
 
     switch msg.type
       when 'init'
-        payload =
-          type: 'init',
-          data: (new Date).getTime()
-        conn.write JSON.stringify payload
+        conn.write (new Message 'init', (new Date).getTime()).stringify()
       when 'update'
-        payload =
-          type: 'update'
-          data: @game.state
-        conn.write JSON.stringify payload
+        conn.write (new Message 'update', @game.state).stringify()
 
   onClose: (conn) =>
     console.log "Connection #{conn.id} closed, cleaning up"
