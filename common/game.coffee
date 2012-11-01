@@ -1,7 +1,18 @@
-# A shared module for the game logic,
-# used by both client and server:
-# - it is require()d by the server
-# - it is compiled (see ../Makefile) to javascript and included in the client
-root = exports ? this
-root.WebPongJSGame =
-    foo: 3
+exports = exports ? this
+
+class Game
+  constructor: ->
+    @state =
+      ball:
+        position: x: 0, y: 0
+      blocks:
+        height: 20
+        left:
+          y: 0
+        right:
+          y: 0
+      # A simple counter for testing syncrhonization;
+      # will be removed.
+      testCount: 0
+
+exports.WebPongJSGame = Game

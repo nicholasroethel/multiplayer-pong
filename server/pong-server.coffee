@@ -1,77 +1,55 @@
-# This is still only an echo server
-sockjs = require 'sockjs'
 http = require 'http'
+sockjs = require 'sockjs'
+
 pongGame = require '../common/game'
+config = require '../common/config'
+utils = require '../common/utils'
 
-root = exports ? this
+PongGame = pongGame.WebPongJSGame
 
-pongConfig =
-    listen:
-        addr: '0.0.0.0',
-        port: 8089,
-    prefix:
-        pong: '/pong',
-    update:
-        interval: 250, # milliseconds
+class PongServer
 
-gameState =
-    ball:
-        position: x: 0, y: 0
-    blocks:
-        height: 20
-        left:
-            y: 0
-        right:
-            y: 0
-    # A simple counter for testing syncrhonization;
-    # will be removed.
-    testCount: 0
+  constructor: ->
+    @pongConfig = config.WebPongJSConfig
+    @intervalUpdaterId = null
+    @clientConnections = {}
+    @server = http.createServer()
+    @sockServer = sockjs.createServer()
+    @sockServer.on 'connection', this.on_connection
 
-internalState =
-    intervalUpdaterId: null,
-    clientConnections: {},
-
-# Return the number of keys in an object (dict)
-dictLength = (d) ->
-    return Object.keys(d).length
-
-# Check wheter an object (dict) is "empty"
-isEmpty = (d) ->
-    return dictLength(d) == 0
-
-sockServer = sockjs.createServer()
-sockServer.on 'connection', (conn) ->
+  on_connection: (conn) =>
     # Add the new connection to the client connection "set"
-    internalState.clientConnections[conn.id] = conn
+    @clientConnections[conn.id] = conn
 
-    conn.on 'data', (message) ->
-        echoedMsg = "Echoed '#{message}'"
-        conn.write echoedMsg
-        console.log "Sending back '#{echoedMsg}'"
+    conn.on 'data', (message) =>
+      echoedMsg = "Echoed '#{message}'"
+      conn.write echoedMsg
+      console.log "Sending back '#{echoedMsg}'"
 
-    conn.on 'close', ->
-        console.log 'Connection closed'
-        delete internalState.clientConnections[conn.id]
-        if isEmpty(internalState.clientConnections) and internalState.intervalUpdaterId?
-            console.log 'Stopping interval updater ...'
-            clearInterval internalState.intervalUpdaterId
-            internalState.intervalUpdaterId = null
-            console.log 'Stopped interval updater.'
+    conn.on 'close', =>
+      console.log 'Connection closed'
+      delete @clientConnections[conn.id]
+      if utils.isEmpty(@clientConnections) and @intervalUpdaterId?
+        clearInterval @intervalUpdaterId
+        @intervalUpdaterId = null
+        console.log 'Stopped interval updater'
 
-    # The callback that will be called periodically to send the game state to
-    # the clients in order to keep them syncrhnozied.
-    broadcastState = ->
-        updateMsg = 'State update ...'
-        console.log gameState.testCount
-        msg = gameState.testCount
-        for cid, c of internalState.clientConnections
-            c.write msg
-        gameState.testCount += 1
+    if !@intervalUpdaterId?
+      console.log @pongConfig.update.interval
+      # Start the state updater
+      @intervalUpdaterId = setInterval(=> this.broadcast 'Ho!', @pongConfig.update.interval)
 
-    if !internalState.intervalUpdaterId?
-        # Start the state updater
-        internalState.intervalUpdaterId = setInterval broadcastState, pongConfig.update.interval
+  listen: ->
+    @sockServer.installHandlers @server, prefix: @pongConfig.server.prefix
+    @server.listen @pongConfig.server.port, @pongConfig.server.addr
 
-server = http.createServer()
-sockServer.installHandlers server, prefix: pongConfig.prefix.pong
-server.listen(pongConfig.listen.port, pongConfig.listen.addr)
+  broadcast: (msg) =>
+    for cid, c of @clientConnections
+      c.write msg
+
+main = ->
+  console.log 'Starting Pong server...'
+  pongServer = new PongServer
+  pongServer.listen()
+
+main()
