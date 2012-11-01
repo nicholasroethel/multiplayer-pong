@@ -18,7 +18,7 @@ class PongServer
     @sockServer.on 'connection', this.onConnection
     @game = new PongGame
 
-  broadcast: (msg) =>
+  broadcast: (msg) ->
     for cid, c of @clientConnections
       c.write msg
 
