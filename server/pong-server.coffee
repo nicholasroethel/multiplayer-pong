@@ -16,15 +16,16 @@ class PongServer
     @server = http.createServer()
     @sockServer = sockjs.createServer()
     @sockServer.on 'connection', this.on_connection
+    @game = new PongGame
 
   on_connection: (conn) =>
     # Add the new connection to the client connection "set"
     @clientConnections[conn.id] = conn
 
     conn.on 'data', (message) =>
-      echoedMsg = "Echoed '#{message}'"
-      conn.write echoedMsg
-      console.log "Sending back '#{echoedMsg}'"
+      console.log "Got message #{message}"
+      if message == 'update'
+        conn.write @game.state.testCount
 
     conn.on 'close', =>
       console.log 'Connection closed'
@@ -36,8 +37,11 @@ class PongServer
 
     if !@intervalUpdaterId?
       console.log @pongConfig.update.interval
+      updater = =>
+        this.broadcast @game.state.testCount
+        @game.state.testCount += 1
       # Start the state updater
-      @intervalUpdaterId = setInterval(=> this.broadcast 'Ho!', @pongConfig.update.interval)
+      @intervalUpdaterId = setInterval updater, @pongConfig.update.interval
 
   listen: ->
     @sockServer.installHandlers @server, prefix: @pongConfig.server.prefix
