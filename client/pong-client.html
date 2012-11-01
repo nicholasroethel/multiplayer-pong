@@ -11,34 +11,10 @@
     <!-- WebPongJS includes -->
     <script src="../common/game.js"></script>
     <script src="../common/config.js"></script>
+    <script src="./client.js"></script>
 
     <script type="text/coffeescript">
-      Game = window.WebPongJSGame
-
-      class Client
-
-        constructor: (@conf) ->
-          @game = new Game
-          @sock = new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
-
-        start: ->
-          @sock.onmessage = (e) =>
-            drift = Math.abs(Number(e.data) - (new Date).getTime())
-            console.log '[message]', drift
-            if drift > @conf.update.maxDrift
-              console.log 'Want update'
-              @sock.send 'update'
-
-          @sock.onopen = =>
-            @game.start()
-            console.log 'Connected, sending hi'
-            @sock.send 'Hi, dude!'
-            @sock.send 'Hi again, dude!'
-
-          @sock.onclose = =>
-            console.log 'Connection closed'
-            @game.stop()
-
+      Client = window.WebPongJSClient
       conf = window.WebPongJSConfig
       client = new Client conf
       client.start()
