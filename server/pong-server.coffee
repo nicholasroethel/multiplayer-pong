@@ -15,26 +15,20 @@ class PongServer
     @clientConnections = {}
     @server = http.createServer()
     @sockServer = sockjs.createServer()
-    @sockServer.on 'connection', this.on_connection
+    @sockServer.on 'connection', this.onConnection
     @game = new PongGame
 
-  on_connection: (conn) =>
-    # Add the new connection to the client connection "set"
+  onConnection: (conn) =>
     @clientConnections[conn.id] = conn
 
-    conn.on 'data', (message) =>
-      console.log "Got message #{message}"
-      if message == 'update'
-        conn.write @game.state.testCount
-
+    conn.on 'data', (msg) =>
+      this.onData(conn, msg)
     conn.on 'close', =>
-      console.log 'Connection closed'
-      delete @clientConnections[conn.id]
-      if utils.isEmpty(@clientConnections) and @intervalUpdaterId?
-        clearInterval @intervalUpdaterId
-        @intervalUpdaterId = null
-        console.log 'Stopped interval updater'
+      this.onClose(conn)
 
+    this.setupUpdater()
+
+  setupUpdater: ->
     if !@intervalUpdaterId?
       console.log @pongConfig.update.interval
       updater = =>
@@ -43,6 +37,11 @@ class PongServer
       # Start the state updater
       @intervalUpdaterId = setInterval updater, @pongConfig.update.interval
 
+  onData: (conn, msg) =>
+    console.log "Got message #{msg} from #{conn.id}"
+    if msg == 'update'
+      conn.write @game.state.testCount
+
   listen: ->
     @sockServer.installHandlers @server, prefix: @pongConfig.server.prefix
     @server.listen @pongConfig.server.port, @pongConfig.server.addr
@@ -50,6 +49,14 @@ class PongServer
   broadcast: (msg) =>
     for cid, c of @clientConnections
       c.write msg
+
+  onClose: (conn) =>
+    console.log "Connection #{conn.id} closed, cleaning up"
+    delete @clientConnections[conn.id]
+    if utils.isEmpty(@clientConnections) and @intervalUpdaterId?
+      clearInterval @intervalUpdaterId
+      @intervalUpdaterId = null
+    console.log "Finished cleanup of closed connection #{conn.id}"
 
 main = ->
   console.log 'Starting Pong server...'
