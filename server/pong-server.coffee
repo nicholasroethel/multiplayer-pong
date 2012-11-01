@@ -18,9 +18,9 @@ class PongServer
     @sockServer.on 'connection', this.onConnection
     @game = new PongGame
 
-  broadcast: (msg) ->
+  broadcast: (type, msg) ->
     for cid, c of @clientConnections
-      c.write msg
+      c.write JSON.stringify type: type, data: msg
 
   listen: ->
     @sockServer.installHandlers @server, prefix: @pongConfig.server.prefix
@@ -38,8 +38,19 @@ class PongServer
 
   onData: (conn, msg) =>
     console.log "Got message #{msg} from #{conn.id}"
-    if msg == 'update'
-      conn.write @game.state.testCount
+    msg = JSON.parse msg
+
+    switch msg.type
+      when 'init'
+        payload =
+          type: 'init',
+          data: (new Date).getTime()
+        conn.write JSON.stringify payload
+      when 'update'
+        payload =
+          type: 'update'
+          data: @game.state
+        conn.write JSON.stringify payload
 
   onClose: (conn) =>
     console.log "Connection #{conn.id} closed, cleaning up"
@@ -53,7 +64,7 @@ class PongServer
     if !@intervalUpdaterId?
       console.log @pongConfig.update.interval
       ticker = =>
-        this.broadcast (new Date).getTime()
+        this.broadcast 'tick', (new Date).getTime()
         @game.state.testCount += 1
       @intervalUpdaterId = setInterval ticker, @pongConfig.update.interval
 
