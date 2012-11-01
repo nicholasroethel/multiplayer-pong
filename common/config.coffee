@@ -7,5 +7,5 @@ exports.WebPongJSConfig =
     prefix: '/pong',
   update:
     interval: 1000, # milliseconds
-    maxDrift: 0.4,
+    maxDrift: 20, # milliseconds
 
