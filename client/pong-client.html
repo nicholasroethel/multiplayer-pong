@@ -16,11 +16,19 @@
     <script type="text/coffeescript">
       conf = window.WebPongJSConfig
       sock = new SockJS "http://#{conf.server.addr}:#{conf.server.port}#{conf.server.prefix}"
-      sock.onmessage = (e) -> console.log '[message]', e.data
+
+      sock.onmessage = (e) ->
+        diff = Math.abs(e.data - (new Date).getTime())
+        console.log '[message]', diff
+        if diff > conf.update.maxDrift
+          console.log 'Want update'
+          sock.send 'update'
+
       sock.onopen = ->
         console.log 'Connected, sending hi'
         sock.send 'Hi, dude!'
         sock.send 'Hi again, dude!'
+
       sock.onclose = ->
         console.log 'Connection closed'
     </script>

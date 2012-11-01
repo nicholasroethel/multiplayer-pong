@@ -52,11 +52,10 @@ class PongServer
   setupUpdater: ->
     if !@intervalUpdaterId?
       console.log @pongConfig.update.interval
-      updater = =>
-        this.broadcast @game.state.testCount
+      ticker = =>
+        this.broadcast (new Date).getTime()
         @game.state.testCount += 1
-      # Start the state updater
-      @intervalUpdaterId = setInterval updater, @pongConfig.update.interval
+      @intervalUpdaterId = setInterval ticker, @pongConfig.update.interval
 
 main = ->
   console.log 'Starting Pong server...'
