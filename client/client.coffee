@@ -1,11 +1,8 @@
 exports = window
 
-Game = window.WebPongJSGame
-
 class Client
 
-  constructor: (@conf) ->
-    @game = new Game
+  constructor: (@conf, @game) ->
     @sock = new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
 
   start: ->
