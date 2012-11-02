@@ -6,6 +6,7 @@ exports.WebPongJSConfig =
     port: 8089,
     prefix: '/pong',
   update:
-    interval: 1000, # milliseconds
-    maxDrift: 20, # milliseconds
-
+    # milliseconds
+    interval: 40,   # Game update intervals
+    syncTime: 200,  # Server sync period
+    maxDrift: 200,  # Maximum drift for each client

@@ -5,21 +5,21 @@ class Game
   @initialState:
     ball:
       position: x: 0, y: 0
+      velocity: x: 0.01, y: 0.005
     blocks:
       height: 20
       left:
         y: 0
       right:
         y: 0
+    lastUpdate: null
     # A simple counter for testing syncrhonization;
     # will be removed.
     testCount: 0
 
-  @defaultUpdateInterval: 1000
-
-  constructor: (state=null, updateInterval=null) ->
-    @state = state or Game.initialState
-    @updateInterval = updateInterval or Game.defaultUpdateInterval
+  constructor: (updateInterval) ->
+    @state = Game.initialState
+    @updateInterval = updateInterval
     @playIntervalId = null
 
   setState: (@state) ->
@@ -32,6 +32,12 @@ class Game
     @playIntervalId = null
 
   play: =>
-    console.log 'Playing..'
+    @state.ball.position.x += @updateInterval * @state.ball.velocity.x
+    @state.ball.position.y += @updateInterval * @state.ball.velocity.y
+    @state.lastUpdate = (new Date).getTime()
+    console.log @state.ball.position.x, @state.ball.position.y
+
+  update: (@state) ->
+    @state.lastUpdate = (new Date).getTime()
 
 exports.WebPongJSGame = Game

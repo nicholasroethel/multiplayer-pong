@@ -19,7 +19,7 @@
       Game = window.WebPongJSGame
 
       conf = window.WebPongJSConfig
-      game = new window.WebPongJSGame
+      game = new window.WebPongJSGame conf.update.interval
 
       client = new Client conf, game
       client.start()

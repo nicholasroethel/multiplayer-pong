@@ -12,21 +12,21 @@ Message = message.WebPongJSMessage
 class PongServer
 
   constructor: ->
-    @pongConfig = config.WebPongJSConfig
+    @config = config.WebPongJSConfig
     @intervalUpdaterId = null
     @clientConnections = {}
     @server = http.createServer()
     @sockServer = sockjs.createServer()
     @sockServer.on 'connection', this.onConnection
-    @game = new PongGame
+    @game = new PongGame @config.update.interval
 
   broadcast: (type, msg) ->
     for cid, c of @clientConnections
       c.write (new Message type, msg).stringify()
 
   listen: ->
-    @sockServer.installHandlers @server, prefix: @pongConfig.server.prefix
-    @server.listen @pongConfig.server.port, @pongConfig.server.addr
+    @sockServer.installHandlers @server, prefix: @config.server.prefix
+    @server.listen @config.server.port, @config.server.addr
 
   onConnection: (conn) =>
     @clientConnections[conn.id] = conn
@@ -37,6 +37,7 @@ class PongServer
       this.onClose(conn)
 
     this.setupUpdater()
+    @game.start()
 
   onData: (conn, msg) =>
     console.log "Got message #{msg} from #{conn.id}"
@@ -55,14 +56,14 @@ class PongServer
       clearInterval @intervalUpdaterId
       @intervalUpdaterId = null
     console.log "Finished cleanup of closed connection #{conn.id}"
+    @game.stop()
 
   setupUpdater: ->
     if !@intervalUpdaterId?
-      console.log @pongConfig.update.interval
+      console.log @config.update.interval
       ticker = =>
-        this.broadcast 'tick', (new Date).getTime()
-        @game.state.testCount += 1
-      @intervalUpdaterId = setInterval ticker, @pongConfig.update.interval
+        this.broadcast 'tick', @game.state.lastUpdate
+      @intervalUpdaterId = setInterval ticker, @config.update.syncTime
 
 main = ->
   console.log 'Starting Pong server...'
