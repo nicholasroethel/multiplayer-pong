@@ -33,7 +33,7 @@ class Client
 
     @sock.onopen = =>
       payload = new Message 'init'
-      @sock.send payload.stringify type: 'init', data: ''
+      @sock.send payload.stringify
       @game.start()
 
     @sock.onclose = =>
