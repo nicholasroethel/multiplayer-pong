@@ -5,7 +5,7 @@ class Game
   @initialState:
     ball:
       position: x: 0, y: 0
-      velocity: x: 0.01, y: 0.005
+      velocity: x: 0.1, y: 0.05
     blocks:
       height: 20
       left:
@@ -17,27 +17,39 @@ class Game
     # will be removed.
     testCount: 0
 
-  constructor: (updateInterval) ->
+  constructor: (@updateInterval) ->
     @state = Game.initialState
-    @updateInterval = updateInterval
     @playIntervalId = null
 
   setState: (@state) ->
 
-  start: ->
-    @playIntervalId = setInterval(this.play, @updateInterval)
+  start: (updateCallback=null) ->
+    gameUpdate = =>
+      this.play()
+      if updateCallback?
+        updateCallback this.state
+    @playIntervalId = setInterval(gameUpdate, @updateInterval)
 
   stop: ->
     clearInterval(@playIntervalId)
     @playIntervalId = null
 
-  play: =>
+  play: ->
     @state.ball.position.x += @updateInterval * @state.ball.velocity.x
     @state.ball.position.y += @updateInterval * @state.ball.velocity.y
     @state.lastUpdate = (new Date).getTime()
-    console.log @state.ball.position.x, @state.ball.position.y
 
   update: (@state) ->
     @state.lastUpdate = (new Date).getTime()
+
+  setBallPosition: (x, y) ->
+    @state.ball.position.x = x
+    @state.ball.position.y = y
+
+  setLeftBlockPosition: (y) ->
+    @state.blocks.left.y = y
+
+  setRightBlockPosition: (y) ->
+    @state.blocks.right.y = y
 
 exports.WebPongJSGame = Game
