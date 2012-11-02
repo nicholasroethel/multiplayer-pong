@@ -1,0 +1,10 @@
+body {
+    background-color: #eeeee9;
+    text-align: center;
+}
+
+#board {
+    border: 2px solid #e0f0d5;
+    background-color: #e0e0d5;
+    margin: 0 auto;
+}
