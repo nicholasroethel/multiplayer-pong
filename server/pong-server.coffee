@@ -19,6 +19,10 @@ class PongServer
     @sockServer = sockjs.createServer()
     @sockServer.on 'connection', this.onConnection
     @game = new PongGame @config.update.interval
+    @handlers =
+      init: this.onInit,
+      update: this.onUpdate,
+      action: this.onAction,
 
   broadcast: (type, msg) ->
     for cid, c of @clientConnections
@@ -42,14 +46,20 @@ class PongServer
   onData: (conn, msg) =>
     console.log "Got message #{msg} from #{conn.id}"
     msg = Message.parse msg
+    handler = @handlers[msg.type]
+    if handler?
+      handler conn, msg.data
 
-    switch msg.type
-      when 'init'
-        conn.write (new Message 'init', (new Date).getTime()).stringify()
-      when 'update'
-        conn.write (new Message 'update', @game.state).stringify()
+  onInit: (conn, data) =>
+    conn.write (new Message 'init', (new Date).getTime()).stringify()
 
-  onClose: (conn) =>
+  onUpdate: (conn, data) =>
+    conn.write (new Message 'update', @game.state).stringify()
+
+  onAction: (conn, data) =>
+    console.log 'on action!'
+
+  onClose: (conn, data) =>
     console.log "Connection #{conn.id} closed, cleaning up"
     delete @clientConnections[conn.id]
     if utils.isEmpty(@clientConnections) and @intervalUpdaterId?
