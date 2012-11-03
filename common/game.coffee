@@ -1,5 +1,40 @@
 exports = exports ? this
 
+class Ball
+
+  constructor: (@x, @y, @radius, @xVelocity, @yVelocity) ->
+
+  blockCollision: (block) ->
+    true
+
+  borderUp: ->
+    @y - @radius
+
+  borderDown: ->
+    @y + @radius
+
+  borderLeft: ->
+    @x - @radius
+
+  borderRight: ->
+    @x + @radius
+
+class Block
+
+  constructor: (@x, @y, @width, @height) ->
+
+  borderUp: ->
+    @y
+
+  borderDown: ->
+    @y + @height
+
+  borderLeft: ->
+    @x
+
+  borderRight: ->
+    @x + @width
+
 class Game
 
   constructor: (@conf) ->
@@ -8,15 +43,14 @@ class Game
     @playIntervalId = null
 
   initialState: ->
-    ball:
-      position: x: 0, y: 0
-      velocity: x: 0.4, y: 0.5
+    blockY = @conf.board.size.y / 2 - @conf.block.size.y / 2
+
+    ball: new Ball(@conf.ball.radius, @conf.ball.radius, @conf.ball.radius,
+      @conf.ball.xVelocity, @conf.ball.yVelocity)
     blocks:
       height: 20
-      left:
-        y: @conf.board.size.y / 2 - @conf.block.size.y / 2
-      right:
-        y: @conf.board.size.y / 2 - @conf.block.size.y / 2
+      left: new Block 0, blockY, @conf.block.size.x, @conf.block.size.y
+      right: new Block @conf.board.size.x - @conf.block.size.x, blockY, @conf.block.size.x, @conf.block.size.y
     lastUpdate: null
 
   setState: (@state) ->
@@ -25,7 +59,7 @@ class Game
     gameUpdate = =>
       this.play()
       this.publish 'update', @state
-    @playIntervalId = setInterval(gameUpdate, @conf.update.interval)
+    @playIntervalId = setInterval gameUpdate, @conf.update.interval
 
   stop: ->
     clearInterval @playIntervalId
@@ -33,21 +67,6 @@ class Game
     @state = this.initialState()
 
   play: ->
-    newX = @state.ball.position.x + @conf.update.interval * @state.ball.velocity.x
-    newY = @state.ball.position.y + @conf.update.interval * @state.ball.velocity.y
-
-    if newX >= @conf.board.size.x or newX <= 0
-      this.stop()
-      this.publish 'game over'
-      console.log 'Game over'
-      return
-
-    if newY >= @conf.board.size.y or newY <= 0
-      @state.ball.velocity.y = - @state.ball.velocity.y
-      newY = @state.ball.position.y + @conf.update.interval * @state.ball.velocity.y
-
-    @state.ball.position.x = newX
-    @state.ball.position.y = newY
     @state.lastUpdate = (new Date).getTime()
 
   update: (@state) ->
@@ -64,3 +83,5 @@ class Game
         callback(event, data)
 
 exports.WebPongJSGame = Game
+exports.WebPongJSBall = Ball
+exports.WebPongJSBlock = Block

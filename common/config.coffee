@@ -19,3 +19,5 @@ exports.WebPongJSConfig =
       x: 25, y: 100
   ball:
     radius: 15
+    xVelocity: 0.4
+    yVelocity: 0.3

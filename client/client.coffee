@@ -23,7 +23,7 @@ class Client
             @diff = @game.state.lastUpdate - msg.data - @initialDrift
             if @diff > @conf.update.maxDrift
               payload = new Message 'update'
-              @sock.send payload.stringify()
+              #@sock.send payload.stringify()
         when 'update'
           @game.update msg.data
         else
