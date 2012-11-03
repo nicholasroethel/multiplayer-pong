@@ -18,6 +18,11 @@ describe 'Game', ->
     _.isEmpty(g.callbacks).should.equal true
     ('playIntervalId' of g).should.equal true
     should.strictEqual g.playIntervalId, null
+  it 'should support loading state', ->
+    g = new Game config
+    newState = _.clone g.state
+    g.setState newState
+    g.state.should.equal newState
   it 'should vertically center the blocks', ->
     g = new Game config
     g.state.blocks.left.x.should.equal 0
