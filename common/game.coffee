@@ -4,41 +4,58 @@ class Ball
 
   constructor: (@x, @y, @radius, @xVelocity, @yVelocity) ->
 
-
   blockCollision: (block) ->
     # Check wheter the ball is in collision with the given block.
-    # This is a general purpose method
     #
     # *-----> x
-    # |       
-    # |        
-    # |       
+    # |
+    # |
+    # |
     # V y
-    #
     #                           ___<--- block.boderUp()
     #                          |   |
     #    block.borderLeft()--->|   |<--- block.borderRight()
     #                          |   |
     #                          |___|
     #                            ^--- block.boderDown()
-    #              ___
+    #              _T_
     #             /   \
-    #            |  *  |  * (@x, @y) - center
-    #             \_|_/|
+    #           L|  C  |R    C(@x, @y) - center
+    #             \_ _/|
+    #               B  |
     #               |  |
     #               <-->
     #                @radius
     #
-    xWithin = block.borderLeft() <= @x <= block.borderRight()
-    yWithin = block.borderUp() <= @y <= block.borderDown()
-    if xWithin and yWithin
-      # Short circuit. Circle center is inside the rectangle
+    # This method checks wheter:
+    #
+    # o The center of the ball is inside the block
+    # OR
+    #
+    # o The distance from C to each of the block borders is less than the ball radius.
+    # o - For horizontal walls, at least one of T and B is between block.borderUp() and block.borderDown()
+    #   - For vertical walls, at least one of L and R is between block.borderLeft() and block.borderRight()
+    #
+    if block.borderLeft() <= @x <= block.borderRight() and block.borderUp() <= @y <= block.borderDown()
+      # Circle center is inside the rectangle
       return true
-    if xWithin
-      return Math.min(Math.abs(@x - block.borderLeft()), Math.abs(@x - block.borderRight())) <= @radius
-    if yWithin
-      return Math.min(Math.abs(@y - block.borderUp()), Math.abs(@x - block.borderDown())) <= @radius
-    return false
+
+    # Use lambdas in hopes of taking advantage of the short-circuit for logical
+    # operators to avoid unnecessary computations, but without making the code
+    # too unreadable.
+    distX = =>
+      Math.min(Math.abs(@x - block.borderLeft()), Math.abs(@x - block.borderRight()))
+    xWithin = =>
+      block.borderLeft() <= @x + @radius <= block.borderRight() or
+        block.borderLeft() <= @x - @radius <= block.borderRight()
+
+    distY = =>
+      Math.min(Math.abs(@y - block.borderUp()), Math.abs(@y - block.borderDown()))
+    yWithin = =>
+      block.borderUp() <= @y + @radius <= block.borderDown() or
+        block.borderUp() <= @y - @radius <= block.borderDown()
+
+    return distX() < @radius and yWithin() or distY() < @radius and xWithin()
 
   horiznotalWallCollision: (maxY) ->
     @y + @radius <= 0 or @y + @radius >= maxY
