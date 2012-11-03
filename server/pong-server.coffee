@@ -36,9 +36,9 @@ class PongServer
     @clientConnections[conn.id] = conn
 
     conn.on 'data', (msg) =>
-      this.onData(conn, msg)
+      this.onData conn, msg
     conn.on 'close', =>
-      this.onClose(conn)
+      this.onClose conn
 
     this.setupUpdater()
     @game.start()
