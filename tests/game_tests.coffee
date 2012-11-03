@@ -63,6 +63,7 @@ describe 'Ball', ->
     ball.borderDown().should.equal 13
     ball.borderLeft().should.equal 6
     ball.borderRight().should.equal 12
+
 describe 'Block', ->
   it 'should store its coordinates and size', ->
     block = new Block 0, 1, 10, 20
