@@ -4,20 +4,44 @@ class Ball
 
   constructor: (@x, @y, @radius, @xVelocity, @yVelocity) ->
 
+
   blockCollision: (block) ->
-    true
+    # Check wheter the ball is in collision with the given block.
+    # This is a general purpose method
+    #
+    # *-----> x
+    # |       
+    # |        
+    # |       
+    # V y
+    #
+    #                           ___<--- block.boderUp()
+    #                          |   |
+    #    block.borderLeft()--->|   |<--- block.borderRight()
+    #                          |   |
+    #                          |___|
+    #                            ^--- block.boderDown()
+    #              ___
+    #             /   \
+    #            |  *  |  * (@x, @y) - center
+    #             \_|_/|
+    #               |  |
+    #               <-->
+    #                @radius
+    #
+    xWithin = block.borderLeft() <= @x <= block.borderRight()
+    yWithin = block.borderUp() <= @y <= block.borderDown()
+    if xWithin and yWithin
+      # Short circuit. Circle center is inside the rectangle
+      return true
+    if xWithin
+      return Math.min(Math.abs(@x - block.borderLeft()), Math.abs(@x - block.borderRight())) <= @radius
+    if yWithin
+      return Math.min(Math.abs(@y - block.borderUp()), Math.abs(@x - block.borderDown())) <= @radius
+    return false
 
-  borderUp: ->
-    @y - @radius
-
-  borderDown: ->
-    @y + @radius
-
-  borderLeft: ->
-    @x - @radius
-
-  borderRight: ->
-    @x + @radius
+  horiznotalWallCollision: (maxY) ->
+    @y + @radius <= 0 or @y + @radius >= maxY
 
 class Block
 
