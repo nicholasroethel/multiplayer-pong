@@ -43,14 +43,14 @@ class Game
     @playIntervalId = null
 
   initialState: ->
-    blockY = @conf.board.size.y / 2 - @conf.block.size.y / 2
+    centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
 
     ball: new Ball(@conf.ball.radius, @conf.ball.radius, @conf.ball.radius,
       @conf.ball.xVelocity, @conf.ball.yVelocity)
     blocks:
       height: 20
-      left: new Block 0, blockY, @conf.block.size.x, @conf.block.size.y
-      right: new Block @conf.board.size.x - @conf.block.size.x, blockY, @conf.block.size.x, @conf.block.size.y
+      left: new Block 0, centerY, @conf.block.size.x, @conf.block.size.y
+      right: new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y
     lastUpdate: null
 
   setState: (@state) ->
