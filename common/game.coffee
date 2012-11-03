@@ -2,45 +2,49 @@ exports = exports ? this
 
 class Game
 
-  constructor: (@updateInterval) ->
-    @state =
-      ball:
-        position: x: 0, y: 0
-        velocity: x: 0.4, y: 0.5
-      blocks:
-        height: 20
-        left:
-          y: 0
-        right:
-          y: 0
-      lastUpdate: null
+  constructor: (@conf) ->
+    @state = this.initialState()
+    @callbacks = {}
     @playIntervalId = null
+
+  initialState: ->
+    ball:
+      position: x: 0, y: 0
+      velocity: x: 0.4, y: 0.5
+    blocks:
+      height: 20
+      left:
+        y: @conf.board.size.y / 2 - @conf.block.size.y / 2
+      right:
+        y: @conf.board.size.y / 2 - @conf.block.size.y / 2
+    lastUpdate: null
 
   setState: (@state) ->
 
-  start: (updateCallback=null) ->
+  start: ->
     gameUpdate = =>
       this.play()
-      if updateCallback?
-        updateCallback this.state
-    @playIntervalId = setInterval(gameUpdate, @updateInterval)
+      this.publish 'update', @state
+    @playIntervalId = setInterval(gameUpdate, @conf.update.interval)
 
   stop: ->
-    clearInterval(@playIntervalId)
+    clearInterval @playIntervalId
     @playIntervalId = null
+    @state = this.initialState()
 
   play: ->
-    newX = @state.ball.position.x + @updateInterval * @state.ball.velocity.x
-    newY = @state.ball.position.y + @updateInterval * @state.ball.velocity.y
+    newX = @state.ball.position.x + @conf.update.interval * @state.ball.velocity.x
+    newY = @state.ball.position.y + @conf.update.interval * @state.ball.velocity.y
 
-    if newX >= 600 or newX <= 0
+    if newX >= @conf.board.size.x or newX <= 0
       this.stop()
+      this.publish 'game over'
       console.log 'Game over'
       return
 
-    if newY >= 400 or newY <= 0
+    if newY >= @conf.board.size.y or newY <= 0
       @state.ball.velocity.y = - @state.ball.velocity.y
-      newY = @state.ball.position.y + @updateInterval * @state.ball.velocity.y
+      newY = @state.ball.position.y + @conf.update.interval * @state.ball.velocity.y
 
     @state.ball.position.x = newX
     @state.ball.position.y = newY
@@ -49,14 +53,14 @@ class Game
   update: (@state) ->
     @state.lastUpdate = (new Date).getTime()
 
-  setLeftBlockPosition: (y) ->
-    @state.blocks.left.y = y
+  on: (event, callback) ->
+    if not (event of @callbacks)
+      @callbacks[event] = []
+    @callbacks[event].push callback
 
-  setRightBlockPosition: (y) ->
-    @state.blocks.right.y = y
-
-  setBallPosition: (x, y) ->
-    @state.ball.position.x = x
-    @state.ball.position.y = y
+  publish: (event, data) ->
+    if event of @callbacks
+      for callback in @callbacks[event]
+        callback(event, data)
 
 exports.WebPongJSGame = Game

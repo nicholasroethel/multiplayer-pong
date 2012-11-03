@@ -7,18 +7,11 @@ class Client
   constructor: (@conf, @game) ->
     @sock = null
     @initialDrift = null
-    @board = document.getElementById(@conf.board.id)
-    @context = @board.getContext('2d')
+    @board = document.getElementById @conf.board.id
+    @context = @board.getContext '2d'
 
   start: ->
-
-    yBlock = @board.height / 2 - @conf.block.size.y / 2
-    @game.setLeftBlockPosition yBlock
-    @game.setRightBlockPosition yBlock
-    @game.setBallPosition 0, 0
-
     @sock = new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
-
     @sock.onmessage = (e) =>
       msg = Message.parse(e.data)
 
@@ -39,7 +32,9 @@ class Client
     @sock.onopen = =>
       payload = new Message 'init'
       @sock.send payload.stringify()
-      @game.start this.drawState
+      @game.on 'update', this.drawState
+      @game.on 'game over', this.gameOver
+      @game.start()
 
     @sock.onclose = =>
       console.log 'Connection closed'
@@ -58,10 +53,14 @@ class Client
     @context.fillStyle = 'black'
     @context.fill()
 
-  drawState: (state) =>
+  drawState: (ev, state) =>
     @context.clearRect 0, 0, @board.width, @board.height
     this.drawBall state.ball.position.x, state.ball.position.y
     this.drawLeftBlock state.blocks.left.y
     this.drawRightBlock state.blocks.right.y
+
+  gameOver: (ev, data) =>
+    # Temp placeholder
+    window.alert 'Game over!'
 
 exports.WebPongJSClient = Client

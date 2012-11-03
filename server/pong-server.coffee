@@ -18,7 +18,7 @@ class PongServer
     @server = http.createServer()
     @sockServer = sockjs.createServer()
     @sockServer.on 'connection', this.onConnection
-    @game = new PongGame @config.update.interval
+    @game = new PongGame @config
     @handlers =
       init: this.onInit,
       update: this.onUpdate,
