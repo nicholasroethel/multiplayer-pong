@@ -16,7 +16,7 @@ exports.WebPongJSConfig =
       x: 600, y: 400
   block:
     size:
-      x: 50, y: 100
+      x: 250, y: 100
     left: color: 'blue'
     right: color: 'red'
   ball:

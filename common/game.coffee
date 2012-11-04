@@ -35,8 +35,13 @@ class Game
     t = (new Date()).getTime() - drift
     timeDelta = t - @state.lastUpdate
     if timeDelta >= @conf.update.interval
-      @state.lastUpdate = t
+      for block in [@state.blocks.left, @state.blocks.right]
+        if block.movingUp
+          block.moveUp()
+        else if block.movingDown
+          block.moveDown(@conf.board.size.y)
       @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
+      @state.lastUpdate = t
       this.publish 'update', @state
 
   update: (state) ->
@@ -59,6 +64,8 @@ class Game
 class Block
 
   constructor: (@x, @y, @width, @height) ->
+    @movingUp = false
+    @movingDown = false
 
   update: (data) ->
     this.x = data.x
@@ -77,6 +84,12 @@ class Block
 
   borderRight: ->
     @x + @width
+
+  moveUp: ->
+    @y = Math.min(@y - 10, @y)
+
+  moveDown: (maxY) ->
+    @y = Math.min(@y + 10, maxY)
 
 class Ball
 
@@ -140,6 +153,7 @@ class Ball
 
   # Pong-aware movement
   pongMove: (timeDelta, leftBlock, rightBlock, boardX, boardY) ->
+
     this.move timeDelta
 
     for block in [leftBlock, rightBlock]

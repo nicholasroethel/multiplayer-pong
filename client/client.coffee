@@ -20,11 +20,26 @@ class Client
           @game.on 'update', this.drawState
           @game.on 'game over', this.gameOver
           @game.start @initialDrift
+
+          document.onkeyup = (ev) =>
+            switch ev.keyCode
+              when 38
+                @game.state.blocks.left.movingUp = false
+              when 40
+                @game.state.blocks.left.movingDown = false
+
+          document.onkeydown = (ev) =>
+            switch ev.keyCode
+              when 38
+                @game.state.blocks.left.movingUp = true
+              when 40
+                @game.state.blocks.left.movingDown = true
+
         when 'tick'
           payload = new Message 'update'
           @sock.send payload.stringify()
         when 'update'
-          @game.update msg.data
+          #@game.update msg.data
         else
           console.log msg.type
 
