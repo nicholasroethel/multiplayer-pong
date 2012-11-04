@@ -118,8 +118,11 @@ class Ball
 
     return distX() < @radius and yWithin() or distY() < @radius and xWithin()
 
-  horiznotalWallCollision: (maxY) ->
-    @y + @radius <= 0 or @y + @radius >= maxY
+  horizontalWallCollision: (maxY) ->
+    @y - @radius <= 0 or @y + @radius >= maxY
+
+  verticalWallCollision: (maxX) ->
+    @x - @radius <= 0 or @x + @radius >= maxX
 
 exports.WebPongJSGame = Game
 exports.WebPongJSBall = Ball

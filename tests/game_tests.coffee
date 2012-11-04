@@ -62,34 +62,58 @@ describe 'Ball', ->
     ball.radius.should.equal 3
     ball.xVelocity.should.equal 0.3
     ball.yVelocity.should.equal 0.4
-  it 'should check for collisions with a block (center within)', ->
-    ball = new Ball 0, 1, 3, 0.3, 0.4
-    block = new Block 0, 1, 10, 20
-    ball.blockCollision(block).should.equal true
-  it 'should check for collisions with a block (left wall)', ->
-    ball = new Ball 17, 22, 3, 0.3, 0.4
-    block = new Block 20, 20, 10, 10
-    ball.blockCollision(block).should.equal true
-  it 'should check for collisions with a block (right wall)', ->
-    ball = new Ball 26, 22, 3, 0.3, 0.4
-    block = new Block 20, 20, 10, 10
-    ball.blockCollision(block).should.equal true
-  it 'should check for collisions with a block (bottom wall)', ->
-    ball = new Ball 22, 33, 3, 0.3, 0.4
-    block = new Block 20, 20, 10, 10
-    ball.blockCollision(block).should.equal true
-  it 'should check for collisions with a block (top wall)', ->
-    ball = new Ball 22, 17, 3, 0.3, 0.4
-    block = new Block 20, 20, 10, 10
-    ball.blockCollision(block).should.equal true
-  it 'should check for collisions with a block (x not within)', ->
-    ball = new Ball 16, 18, 3, 0.3, 0.4
-    block = new Block 20, 20, 10, 10
-    ball.blockCollision(block).should.equal false
-  it 'should check for collisions with a block (y not within)', ->
-    ball = new Ball 18, 16, 3, 0.3, 0.4
-    block = new Block 20, 20, 10, 10
-    ball.blockCollision(block).should.equal false
+
+  describe 'should do block collision check:', ->
+    it 'center within', ->
+      ball = new Ball 0, 1, 3, 0.3, 0.4
+      block = new Block 0, 1, 10, 20
+      ball.blockCollision(block).should.equal true
+    it 'left wall', ->
+      ball = new Ball 17, 22, 3, 0.3, 0.4
+      block = new Block 20, 20, 10, 10
+      ball.blockCollision(block).should.equal true
+    it 'right wall', ->
+      ball = new Ball 26, 22, 3, 0.3, 0.4
+      block = new Block 20, 20, 10, 10
+      ball.blockCollision(block).should.equal true
+    it 'bottom wall', ->
+      ball = new Ball 22, 33, 3, 0.3, 0.4
+      block = new Block 20, 20, 10, 10
+      ball.blockCollision(block).should.equal true
+    it 'top wall', ->
+      ball = new Ball 22, 17, 3, 0.3, 0.4
+      block = new Block 20, 20, 10, 10
+      ball.blockCollision(block).should.equal true
+    it 'x not within', ->
+      ball = new Ball 16, 18, 3, 0.3, 0.4
+      block = new Block 20, 20, 10, 10
+      ball.blockCollision(block).should.equal false
+    it 'y not within', ->
+      ball = new Ball 18, 16, 3, 0.3, 0.4
+      block = new Block 20, 20, 10, 10
+      ball.blockCollision(block).should.equal false
+
+  describe 'should do horizontall wall collision check:', ->
+    it 'top', ->
+      ball = new Ball 0, 18, 3, 0.3, 0.4
+      ball.horizontalWallCollision(20).should.equal true
+    it 'bottom', ->
+      ball = new Ball 0, 2, 3, 0.3, 0.4
+      ball.horizontalWallCollision(20).should.equal true
+    it 'no collision', ->
+      ball = new Ball 0, 16.99, 3, 0.3, 0.4
+      ball.horizontalWallCollision(20).should.equal false
+
+  describe 'vertical wall collision check', ->
+    it 'left', ->
+      ball = new Ball 0, 10, 3, 0.3, 0.4
+      ball.verticalWallCollision(20).should.equal true
+    it 'right', ->
+      ball = new Ball 0, 18, 3, 0.3, 0.4
+      ball.verticalWallCollision(20).should.equal true
+    it 'ok', ->
+      ball = new Ball 3.001, 16.999, 3, 0.3, 0.4
+      ball.verticalWallCollision(20).should.equal false
 
 describe 'Block', ->
   it 'should store its coordinates and size', ->
