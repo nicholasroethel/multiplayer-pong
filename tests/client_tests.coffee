@@ -1,6 +1,7 @@
 Client = window.WebPongJSClient
 Game = window.WebPongJSGame
 conf = window.WebPongJSConfig
+Message = window.WebPongJSMessage
 
 class MockCanvas
   constructor: ->
@@ -38,6 +39,13 @@ class MockCanvas
   fill: ->
     @currentPath.filled = true
     @currentpath = null
+
+class MockSocket
+  constructor: ->
+    @buffer = []
+
+  send: (msg) ->
+    @buffer.push msg
 
 describe 'Client', ->
   it 'should be initialized', ->
@@ -96,3 +104,20 @@ describe 'Client', ->
     expect((_.last canvas.paths).arcs.length).to.be 1
     expect((_.last canvas.paths).arcs[0].x).to.be game.state.ball.x
     expect((_.last canvas.paths).arcs[0].y).to.be game.state.ball.y
+
+  describe 'interaction with server', ->
+    it 'should start connection with server', ->
+      canvas = new MockCanvas conf.board.size.x, conf.board.size.y
+      game = new window.WebPongJSGame conf
+      c = new Client conf, game, canvas
+      sock = new MockSocket
+      c.start sock
+      expect(c.sock).to.be sock
+      expect(c.sock.onmessage).to.be.a 'function'
+      expect(c.sock.onopen).to.be.a 'function'
+      c.sock.onopen()
+      expect(c.sock.buffer.length).to.be 1
+      expect(c.sock.buffer[0]).to.be.a 'string'
+      msg = Message.parse(c.sock.buffer[0])
+      expect(msg.type).to.be 'init'
+      expect(msg.data).to.be ''

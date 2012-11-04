@@ -9,8 +9,8 @@ class Client
     @initialDrift = null
     @context = @board.getContext '2d'
 
-  start: ->
-    @sock = new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
+  start: (@sock) ->
+    @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
     @sock.onmessage = (e) =>
       msg = Message.parse(e.data)
 
