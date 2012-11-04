@@ -35,36 +35,8 @@ class Game
     @state.lastUpdate = (new Date).getTime()
     timeDelta = @state.lastUpdate - @state.prevUpdate
     @state.prevUpdate = @state.lastUpdate
-    @state.ball.move timeDelta
+    @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
 
-    bounce = @state.ball.blockPong @state.blocks.left
-    if bounce.x or bounce.y
-      @state.ball.moveBack timeDelta
-      if bounce.x
-        @state.ball.horizontalPong()
-      if bounce.y
-        @state.ball.verticalPong()
-      @state.ball.move timeDelta
-      return
-
-    bounce = @state.ball.blockPong @state.blocks.right
-    if bounce.x or bounce.y
-      @state.ball.moveBack timeDelta
-      if bounce.x
-        @state.ball.horizontalPong()
-      if bounce.y
-        @state.ball.verticalPong()
-      @state.ball.move timeDelta
-      return
-
-    if @state.ball.horizontalWallCollision @conf.board.size.y
-      @state.ball.moveBack timeDelta
-      @state.ball.verticalPong()
-      @state.ball.move timeDelta
-    else if @state.ball.verticalWallCollision @conf.board.size.x
-      @state.ball.moveBack timeDelta
-      @state.ball.horizontalPong()
-      @state.ball.move timeDelta
 
   update: (@state) ->
     @state.lastUpdate = (new Date).getTime()
@@ -148,6 +120,31 @@ class Ball
   horizontalPong: ->
     @xVelocity = -@xVelocity
 
+  # Pong-aware movement
+  pongMove: (timeDelta, leftBlock, rightBlock, boardX, boardY) ->
+    this.move timeDelta
+
+    for block in [leftBlock, rightBlock]
+      bounce = this.blockPong block
+      if bounce.x or bounce.y
+        this.moveBack timeDelta
+        if bounce.x
+          this.horizontalPong()
+        if bounce.y
+          this.verticalPong()
+        this.move timeDelta
+        return
+
+    if this.horizontalWallCollision boardY
+      this.moveBack timeDelta
+      this.verticalPong()
+      this.move timeDelta
+    else if this.verticalWallCollision boardX
+      this.moveBack timeDelta
+      this.horizontalPong()
+      this.move timeDelta
+
+  # Free movement of the ball
   move: (t) ->
     @x += @xVelocity * t
     @y += @yVelocity * t
