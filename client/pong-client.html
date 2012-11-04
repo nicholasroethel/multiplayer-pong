@@ -21,7 +21,7 @@
       conf = window.WebPongJSConfig
       game = new window.WebPongJSGame conf
 
-      client = new Client conf, game, document.getElementById @conf.board.id
+      client = new Client conf, game, document.getElementById conf.board.id
       client.start()
     </script>
 
