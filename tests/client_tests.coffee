@@ -27,6 +27,8 @@ if window?
       @currentPath = {}
       @paths.push @currentPath
 
+    closePath: ->
+
     arc: (x, y, radius, angleStart, angleEnd, counterClockWise) ->
       @currentPath.arcs = @currentPath.arcs ? []
       @currentPath.arcs.push
@@ -101,10 +103,10 @@ if window?
       c = new Client conf, game, canvas
       c.drawState 'update', game.state
       expect(canvas.clearRectCalled).to.be true
-      expect(canvas.paths.length).to.be 1
-      expect((_.last canvas.paths).arcs.length).to.be 1
-      expect((_.last canvas.paths).arcs[0].x).to.be game.state.ball.x
-      expect((_.last canvas.paths).arcs[0].y).to.be game.state.ball.y
+      expect(canvas.paths.length).to.be 3
+      expect((_.first canvas.paths).arcs.length).to.be 1
+      expect((_.first canvas.paths).arcs[0].x).to.be game.state.ball.x
+      expect((_.first canvas.paths).arcs[0].y).to.be game.state.ball.y
 
     describe 'interaction with server', ->
       it 'should start connection with server', ->

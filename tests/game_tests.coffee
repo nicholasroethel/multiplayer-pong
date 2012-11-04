@@ -64,34 +64,48 @@ describe 'Ball', ->
     ball.yVelocity.should.equal 0.4
 
   describe 'should do block collision check:', ->
-    it 'center within', ->
-      ball = new Ball 0, 1, 3, 0.3, 0.4
-      block = new Block 0, 1, 10, 20
-      ball.blockCollision(block).should.equal true
+    # it 'center within', ->
+    #   ball = new Ball 0, 1, 3, 1, 1
+    #   block = new Block 0, 1, 10, 20
+    #   bounce = ball.blockPong(block)
+    #   bounce.x.should.equal false
+    #   bounce.y.should.equal false
     it 'left wall', ->
-      ball = new Ball 17, 22, 3, 0.3, 0.4
+      ball = new Ball 17, 25, 3, 1, 1
       block = new Block 20, 20, 10, 10
-      ball.blockCollision(block).should.equal true
+      bounce = ball.blockPong(block)
+      bounce.x.should.equal true
+      bounce.y.should.equal false
     it 'right wall', ->
-      ball = new Ball 26, 22, 3, 0.3, 0.4
+      ball = new Ball 28, 25, 3, -1, 1
       block = new Block 20, 20, 10, 10
-      ball.blockCollision(block).should.equal true
+      bounce = ball.blockPong(block)
+      bounce.x.should.equal true
+      bounce.y.should.equal false
     it 'bottom wall', ->
-      ball = new Ball 22, 33, 3, 0.3, 0.4
+      ball = new Ball 28, 33, 3, 1, -1
       block = new Block 20, 20, 10, 10
-      ball.blockCollision(block).should.equal true
+      bounce = ball.blockPong(block)
+      bounce.x.should.equal false
+      bounce.y.should.equal true
     it 'top wall', ->
-      ball = new Ball 22, 17, 3, 0.3, 0.4
+      ball = new Ball 28, 17, 3, 1, 1
       block = new Block 20, 20, 10, 10
-      ball.blockCollision(block).should.equal true
+      bounce = ball.blockPong(block)
+      bounce.x.should.equal false
+      bounce.y.should.equal true
     it 'x not within', ->
-      ball = new Ball 16, 18, 3, 0.3, 0.4
+      ball = new Ball 16, 33, 3, 1, -1
       block = new Block 20, 20, 10, 10
-      ball.blockCollision(block).should.equal false
+      bounce = ball.blockPong(block)
+      bounce.x.should.equal false
+      bounce.y.should.equal false
     it 'y not within', ->
-      ball = new Ball 18, 16, 3, 0.3, 0.4
+      ball = new Ball 28, 16, 3, -1, 1
       block = new Block 20, 20, 10, 10
-      ball.blockCollision(block).should.equal false
+      bounce = ball.blockPong(block)
+      bounce.x.should.equal false
+      bounce.y.should.equal false
 
   describe 'should do horizontall wall collision check:', ->
     it 'top', ->

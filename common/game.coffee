@@ -9,7 +9,6 @@ class Game
 
   initialState: ->
     centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
-
     ball: new Ball(@conf.ball.radius + 1, @conf.ball.radius + 1, @conf.ball.radius,
       @conf.ball.xVelocity, @conf.ball.yVelocity)
     blocks:
@@ -26,7 +25,7 @@ class Game
     @playIntervalId = setInterval gameUpdate, @conf.update.interval
 
   stop: ->
-    @stopped = true
+    console.log 'stop'
     clearInterval @playIntervalId
     @playIntervalId = null
     # @state = this.initialState()
@@ -35,14 +34,30 @@ class Game
   play: ->
     @state.lastUpdate = (new Date).getTime()
     timeDelta = @state.lastUpdate - @state.prevUpdate
-    @state.ball.move timeDelta
     @state.prevUpdate = @state.lastUpdate
+    @state.ball.move timeDelta
 
-    if (@state.ball.blockCollision @state.blocks.left) or (@state.ball.blockCollision @state.blocks.right)
+    bounce = @state.ball.blockPong @state.blocks.left
+    if bounce.x or bounce.y
       @state.ball.moveBack timeDelta
-      @state.ball.horizontalPong()
+      if bounce.x
+        @state.ball.horizontalPong()
+      if bounce.y
+        @state.ball.verticalPong()
       @state.ball.move timeDelta
-    else if @state.ball.horizontalWallCollision @conf.board.size.y
+      return
+
+    bounce = @state.ball.blockPong @state.blocks.right
+    if bounce.x or bounce.y
+      @state.ball.moveBack timeDelta
+      if bounce.x
+        @state.ball.horizontalPong()
+      if bounce.y
+        @state.ball.verticalPong()
+      @state.ball.move timeDelta
+      return
+
+    if @state.ball.horizontalWallCollision @conf.board.size.y
       @state.ball.moveBack timeDelta
       @state.ball.verticalPong()
       @state.ball.move timeDelta
@@ -84,56 +99,42 @@ class Ball
 
   constructor: (@x, @y, @radius, @xVelocity, @yVelocity) ->
 
-  blockCollision: (block) ->
-    # Check wheter the ball is in collision with the given block.
-    #
-    # *-----> x
-    # |
-    # |
-    # |
-    # V y
-    #                           ___<--- block.boderUp()
-    #                          |   |
-    #    block.borderLeft()--->|   |<--- block.borderRight()
-    #                          |   |
-    #                          |___|
-    #                            ^--- block.boderDown()
-    #              _T_
-    #             /   \
-    #           L|  C  |R    C(@x, @y) - center
-    #             \_ _/|
-    #               B  |
-    #               |  |
-    #               <-->
-    #                @radius
-    #
-    # This method checks wheter:
-    #
-    # o The center of the ball is inside the block
-    # OR
-    # o The distance from C to each of the block borders is less than the ball radius.
-    #   - For horizontal walls, at least one of T and B is between block.borderUp() and block.borderDown()
-    #   - For vertical walls, at least one of L and R is between block.borderLeft() and block.borderRight()
-    if block.borderLeft() <= @x <= block.borderRight() and block.borderUp() <= @y <= block.borderDown()
-      # Circle center is inside the rectangle
-      return true
+  # Bounce this ball off a block if needed
+  blockPong: (block) ->
+    bounce = x: false, y: false
 
-    # Use lambdas in hopes of taking advantage of the short-circuit for logical
-    # operators to avoid unnecessary computations, but without making the code
-    # too unreadable.
-    distX = =>
-      Math.min(Math.abs(@x - block.borderLeft()), Math.abs(@x - block.borderRight()))
-    xWithin = =>
-      block.borderLeft() <= @x + @radius <= block.borderRight() or
-        block.borderLeft() <= @x - @radius <= block.borderRight()
+    # Block borders
+    left = block.borderLeft()
+    right = block.borderRight()
+    up = block.borderUp()
+    down = block.borderDown()
 
-    distY = =>
-      Math.min(Math.abs(@y - block.borderUp()), Math.abs(@y - block.borderDown()))
-    yWithin = =>
-      block.borderUp() <= @y + @radius <= block.borderDown() or
-        block.borderUp() <= @y - @radius <= block.borderDown()
+    xWithin = block.borderLeft() <= @x + @radius <= block.borderRight() or
+      block.borderLeft() <= @x - @radius <= block.borderRight()
 
-    return distX() < @radius and yWithin() or distY() < @radius and xWithin()
+    yWithin = block.borderUp() <= @y + @radius <= block.borderDown() or
+      block.borderUp() <= @y - @radius <= block.borderDown()
+
+    if yWithin
+      if @xVelocity > 0
+        # Moving right, check left border
+        if Math.abs(@x-left) <= @radius
+          bounce.x = true
+      else
+        if Math.abs(@x-right) <= @radius
+          bounce.x = true
+
+    if xWithin
+      if @yVelocity > 0
+        # Moving down, check up border
+        if Math.abs(@y-up) <= @radius
+          bounce.y = true
+      else
+        # Moving up, check down border
+        if Math.abs(@y-down) <= @radius
+          bounce.y = true
+
+    return bounce
 
   horizontalWallCollision: (maxY) ->
     @y - @radius <= 0 or @y + @radius >= maxY

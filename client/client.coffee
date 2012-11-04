@@ -40,16 +40,25 @@ class Client
       @game.stop()
 
   drawLeftBlock: (y) ->
+    @context.beginPath()
+    @context.fillStyle = @conf.block.left.color
     @context.fillRect 0, y, @conf.block.size.x, @conf.block.size.y
+    @context.closePath()
+    @context.fill()
 
   drawRightBlock: (y) ->
+    @context.beginPath()
+    @context.fillStyle = @conf.block.right.color
     @context.fillRect @conf.board.size.x - @conf.block.size.x, y,
       @conf.block.size.x, @conf.block.size.y
+    @context.closePath()
+    @context.fill()
 
   drawBall: (x, y) ->
     @context.beginPath()
+    @context.fillStyle = @conf.ball.color
     @context.arc x, y, @conf.ball.radius, 0, 2 * Math.PI, false
-    @context.fillStyle = 'black'
+    @context.closePath()
     @context.fill()
 
   drawState: (ev, state) =>
