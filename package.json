@@ -1,0 +1,13 @@
+{
+  "name" : "WebPongJS",
+  "description" : "Simple pong game",
+  "version": "0.0.0",
+  "dependencies" : [
+    "coffee-script",
+    "mocha",
+    "should",
+    "sockjs",
+    "sockjs-client",
+    "underscore"
+  ]
+}

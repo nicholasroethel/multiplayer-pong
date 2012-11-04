@@ -1,18 +1,17 @@
-COFFEE=coffee
+COFFEE=./node_modules/coffee-script/bin/coffee
 COFFEE_TO_COMPILE=common/*.coffee client/*.coffee
 CCOMPILE=--compile $(COFFEE_TO_COMPILE)
 SERVER=server/pong-server.coffee
-DEPS=underscore mocha should sockjs
 
-MOCHA=mocha
+MOCHA=./node_modules/mocha/bin/mocha
 TESTS=./tests/*.coffee
 
 run-server:
 	$(COFFEE) $(SERVER)
 
 install-modules:
-	# Installs node.js module dependencies
-	sudo npm install -g $(DEPS)
+	# Installs dependencies
+	npm install
 
 compile:
 	$(COFFEE) $(CCOMPILE)
