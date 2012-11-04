@@ -9,8 +9,8 @@
     "underscore"
   ],
   "devDependencies": [
-    "expect",
+    "expect.js",
     "mocha",
-    "should",
+    "should"
   ]
 }

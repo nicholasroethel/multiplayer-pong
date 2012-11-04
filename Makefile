@@ -1,5 +1,5 @@
 COFFEE=./node_modules/coffee-script/bin/coffee
-COFFEE_TO_COMPILE=common/*.coffee client/*.coffee
+COFFEE_TO_COMPILE=common/*.coffee client/*.coffee tests/*.coffee
 CCOMPILE=--compile $(COFFEE_TO_COMPILE)
 SERVER=server/pong-server.coffee
 

@@ -4,10 +4,9 @@ Message = exports.WebPongJSMessage
 
 class Client
 
-  constructor: (@conf, @game) ->
+  constructor: (@conf, @game, @board) ->
     @sock = null
     @initialDrift = null
-    @board = document.getElementById @conf.board.id
     @context = @board.getContext '2d'
 
   start: ->
@@ -55,7 +54,7 @@ class Client
 
   drawState: (ev, state) =>
     @context.clearRect 0, 0, @board.width, @board.height
-    this.drawBall state.ball.position.x, state.ball.position.y
+    this.drawBall state.ball.x, state.ball.y
     this.drawLeftBlock state.blocks.left.y
     this.drawRightBlock state.blocks.right.y
 
