@@ -4,10 +4,12 @@
   "version": "0.0.0",
   "dependencies" : [
     "coffee-script",
-    "mocha",
-    "should",
     "sockjs",
     "sockjs-client",
     "underscore"
+  ],
+  "devDependencies": [
+    "mocha",
+    "should"
   ]
 }
