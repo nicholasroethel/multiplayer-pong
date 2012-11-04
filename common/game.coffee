@@ -68,10 +68,10 @@ class Block
     @movingDown = false
 
   update: (data) ->
-    this.x = data.x
-    this.y = data.y
-    this.width = data.width
-    this.height = data.height
+    @x = data.x
+    @y = data.y
+    @width = data.width
+    @height = data.height
 
   borderUp: ->
     @y
@@ -96,11 +96,11 @@ class Ball
   constructor: (@x, @y, @radius, @xVelocity, @yVelocity) ->
 
   update: (data) ->
-    this.x = data.x
-    this.y = data.y
-    this.xVelocity = data.xVelocity
-    this.yVelocity = data.yVelocity
-    this.radius = data.radius
+    @x = data.x
+    @y = data.y
+    @xVelocity = data.xVelocity
+    @yVelocity = data.yVelocity
+    @radius = data.radius
 
   # Bounce this ball off a block if needed
   blockPong: (block) ->
