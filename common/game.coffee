@@ -10,7 +10,7 @@ class Game
   initialState: ->
     centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
 
-    ball: new Ball(@conf.ball.radius, @conf.ball.radius, @conf.ball.radius,
+    ball: new Ball(@conf.ball.radius + 1, @conf.ball.radius + 1, @conf.ball.radius,
       @conf.ball.xVelocity, @conf.ball.yVelocity)
     blocks:
       height: 20
@@ -18,21 +18,38 @@ class Game
       right: new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y
     lastUpdate: null
 
-  setState: (@state) ->
-
   start: ->
+    @state.prevUpdate = (new Date).getTime()
     gameUpdate = =>
       this.play()
       this.publish 'update', @state
     @playIntervalId = setInterval gameUpdate, @conf.update.interval
 
   stop: ->
+    @stopped = true
     clearInterval @playIntervalId
     @playIntervalId = null
-    @state = this.initialState()
+    # @state = this.initialState()
+    this.publish 'update', @state
 
   play: ->
     @state.lastUpdate = (new Date).getTime()
+    timeDelta = @state.lastUpdate - @state.prevUpdate
+    @state.ball.move timeDelta
+    @state.prevUpdate = @state.lastUpdate
+
+    if (@state.ball.blockCollision @state.blocks.left) or (@state.ball.blockCollision @state.blocks.right)
+      @state.ball.moveBack timeDelta
+      @state.ball.horizontalPong()
+      @state.ball.move timeDelta
+    else if @state.ball.horizontalWallCollision @conf.board.size.y
+      @state.ball.moveBack timeDelta
+      @state.ball.verticalPong()
+      @state.ball.move timeDelta
+    else if @state.ball.verticalWallCollision @conf.board.size.x
+      @state.ball.moveBack timeDelta
+      @state.ball.horizontalPong()
+      @state.ball.move timeDelta
 
   update: (@state) ->
     @state.lastUpdate = (new Date).getTime()
@@ -123,6 +140,19 @@ class Ball
 
   verticalWallCollision: (maxX) ->
     @x - @radius <= 0 or @x + @radius >= maxX
+
+  verticalPong: ->
+    @yVelocity = -@yVelocity
+
+  horizontalPong: ->
+    @xVelocity = -@xVelocity
+
+  move: (t) ->
+    @x += @xVelocity * t
+    @y += @yVelocity * t
+
+  moveBack: (t) ->
+    this.move -t
 
 exports.WebPongJSGame = Game
 exports.WebPongJSBall = Ball

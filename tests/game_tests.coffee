@@ -21,7 +21,7 @@ describe 'Game', ->
   it 'should support loading state', ->
     g = new Game config
     newState = _.clone g.state
-    g.setState newState
+    g.update newState
     g.state.should.equal newState
   it 'should vertically center the blocks', ->
     g = new Game config
@@ -114,6 +114,16 @@ describe 'Ball', ->
     it 'ok', ->
       ball = new Ball 3.001, 16.999, 3, 0.3, 0.4
       ball.verticalWallCollision(20).should.equal false
+
+  it 'should pong vertically', ->
+    ball = new Ball 0, 10, 3, 0.3, 0.4
+    ball.verticalPong()
+    ball.yVelocity = - 0.4
+
+  it 'should pong horizontally', ->
+    ball = new Ball 0, 10, 3, 0.3, 0.4
+    ball.horizontalPong()
+    ball.xVelocity = - 0.3
 
 describe 'Block', ->
   it 'should store its coordinates and size', ->

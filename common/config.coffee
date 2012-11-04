@@ -7,7 +7,7 @@ exports.WebPongJSConfig =
     prefix: '/pong',
   update:
     # milliseconds
-    interval: 40,   # Game update intervals
+    interval: 30,   # Game update intervals, ms.
     syncTime: 200,  # Server sync period
     maxDrift: 200,  # Maximum drift for each client
   board:
@@ -16,8 +16,8 @@ exports.WebPongJSConfig =
       x: 600, y: 400
   block:
     size:
-      x: 25, y: 100
+      x: 50, y: 100
   ball:
-    radius: 15
-    xVelocity: 0.4
-    yVelocity: 0.3
+    radius: 10
+    xVelocity: 0.2
+    yVelocity: 0.4
