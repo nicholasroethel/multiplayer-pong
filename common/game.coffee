@@ -94,11 +94,9 @@ class Ball
     #
     # o The center of the ball is inside the block
     # OR
-    #
     # o The distance from C to each of the block borders is less than the ball radius.
-    # o - For horizontal walls, at least one of T and B is between block.borderUp() and block.borderDown()
+    #   - For horizontal walls, at least one of T and B is between block.borderUp() and block.borderDown()
     #   - For vertical walls, at least one of L and R is between block.borderLeft() and block.borderRight()
-    #
     if block.borderLeft() <= @x <= block.borderRight() and block.borderUp() <= @y <= block.borderDown()
       # Circle center is inside the rectangle
       return true
