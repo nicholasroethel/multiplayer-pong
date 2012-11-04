@@ -17,12 +17,12 @@ class Game
       right: new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y
     lastUpdate: null
 
-  start: ->
-    @state.prevUpdate = (new Date).getTime()
+  start: (drift) ->
+    drift = drift ? 0
+    @state.lastUpdate = (new Date).getTime() - drift
     gameUpdate = =>
-      this.play()
-      this.publish 'update', @state
-    @playIntervalId = setInterval gameUpdate, @conf.update.interval
+      this.play drift
+    @playIntervalId = setInterval gameUpdate, 1 # Every ms.
 
   stop: ->
     console.log 'stop'
@@ -31,15 +31,20 @@ class Game
     # @state = this.initialState()
     this.publish 'update', @state
 
-  play: ->
-    @state.lastUpdate = (new Date).getTime()
-    timeDelta = @state.lastUpdate - @state.prevUpdate
-    @state.prevUpdate = @state.lastUpdate
-    @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
+  play: (drift) ->
+    t = (new Date()).getTime() - drift
+    timeDelta = t - @state.lastUpdate
+    if timeDelta >= @conf.update.interval
+      @state.lastUpdate = t
+      @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
+      this.publish 'update', @state
 
-
-  update: (@state) ->
-    @state.lastUpdate = (new Date).getTime()
+  update: (state) ->
+    @state.lastUpdate = state.lastUpdate
+    @state.ball.update state.ball
+    @state.blocks.left.update state.blocks.left
+    @state.blocks.right.update state.blocks.right
+    this.publish 'update', @state
 
   on: (event, callback) ->
     if not (event of @callbacks)
@@ -54,6 +59,12 @@ class Game
 class Block
 
   constructor: (@x, @y, @width, @height) ->
+
+  update: (data) ->
+    this.x = data.x
+    this.y = data.y
+    this.width = data.width
+    this.height = data.height
 
   borderUp: ->
     @y
@@ -70,6 +81,13 @@ class Block
 class Ball
 
   constructor: (@x, @y, @radius, @xVelocity, @yVelocity) ->
+
+  update: (data) ->
+    this.x = data.x
+    this.y = data.y
+    this.xVelocity = data.xVelocity
+    this.yVelocity = data.yVelocity
+    this.radius = data.radius
 
   # Bounce this ball off a block if needed
   blockPong: (block) ->

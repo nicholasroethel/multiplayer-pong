@@ -16,13 +16,13 @@ class Client
 
       switch msg.type
         when 'init'
-          @initialDrift = Math.abs(Number(msg.data) - (new Date).getTime())
+          @initialDrift = Number(msg.data) - (new Date).getTime()
+          @game.on 'update', this.drawState
+          @game.on 'game over', this.gameOver
+          @game.start @initialDrift
         when 'tick'
-          if @game.state.lastUpdate?
-            @diff = @game.state.lastUpdate - msg.data - @initialDrift
-            if @diff > @conf.update.maxDrift
-              payload = new Message 'update'
-              #@sock.send payload.stringify()
+          payload = new Message 'update'
+          @sock.send payload.stringify()
         when 'update'
           @game.update msg.data
         else
@@ -31,9 +31,6 @@ class Client
     @sock.onopen = =>
       payload = new Message 'init'
       @sock.send payload.stringify()
-      @game.on 'update', this.drawState
-      @game.on 'game over', this.gameOver
-      @game.start()
 
     @sock.onclose = =>
       console.log 'Connection closed'

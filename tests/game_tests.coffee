@@ -21,8 +21,9 @@ describe 'Game', ->
   it 'should support loading state', ->
     g = new Game config
     newState = _.clone g.state
+    newState.ball.x = 33
     g.update newState
-    g.state.should.equal newState
+    g.state.ball.x.should.equal 33
   it 'should vertically center the blocks', ->
     g = new Game config
     g.state.blocks.left.x.should.equal 0

@@ -8,8 +8,8 @@ exports.WebPongJSConfig =
   update:
     # milliseconds
     interval: 30,   # Game update intervals, ms.
-    syncTime: 200,  # Server sync period
-    maxDrift: 200,  # Maximum drift for each client
+    syncTime: 1500, # Server sync period
+    maxDrift: 100,  # Maximum drift for each client
   board:
     id: 'board'
     size:
