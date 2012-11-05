@@ -14,37 +14,50 @@ class Client
     @controlledBlock = null
     @initialDrift = null
     @messageBoard = document.getElementById(@conf.messageBoard.id)
-    @sock = null
+    @callbacks =
+      init: this.onInit,
+      start: this.onStart,
+      update: this.onUpdate,
+      drop: this.onDrop
 
-  userMessage: (msg, append=false) ->
+  userMessage: (msg) ->
     @messageBoard.innerHTML = msg
+
+  onInit: (msg) =>
+    @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
+    @blockName = msg.data.block
+    @controlledBlock = @game.state.blocks[msg.data.block]
+    this.userMessage 'Waiting for other player'
+
+  onStart: (msg) =>
+    @game.start @initialDrift
+    @game.on 'update', this.drawState
+    @game.on 'game over', this.gameOver
+    document.onkeydown = this.onKeyDown
+    document.onkeyup = this.onKeyUp
+    this.userMessage "Game running. You are controlling the #{@blockName} block"
+
+  onUpdate: (msg) =>
+    @game.update msg.data
+
+  onDrop: (msg) =>
+    @game.stop()
+    this.userMessage 'Other player dropped. Game is reset.'
 
   start: (@sock) ->
     @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
     @sock.onmessage = (e) =>
       try
         msg = Message.parse(e.data)
-      catch error
-        console.log "Got message #{e.data}"
-        console.dir e
+      catch e
+        console.error "Error parsing message from server: #{e}"
+        throw e
 
-      switch msg.type
-        when 'init'
-          @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
-          @blockName = msg.data.block
-          @controlledBlock = @game.state.blocks[msg.data.block]
-          this.userMessage 'Waiting for other player'
-        when 'start'
-          @game.start @initialDrift
-          @game.on 'update', this.drawState
-          @game.on 'game over', this.gameOver
-          document.onkeydown = this.onKeyDown
-          document.onkeyup = this.onKeyUp
-          this.userMessage "Game running. You are controlling the #{@blockName} block"
-        when 'update'
-          @game.update msg.data
-        else
-          console.log msg.type
+      handler = @callbacks[msg.type]
+      if handler?
+        handler msg
+      else
+        console.error "Ignoring unknown message #{msg}"
 
     @sock.onopen = =>
       payload = new Message 'init'

@@ -29,6 +29,7 @@ class PongServer
       moveUp: this.onMoveUp,
       moveDown: this.onMoveDown
     @updaterId = null
+    @availableBlocks = ['left', 'right']
 
   listen: ->
     @sockServer.installHandlers @httpServer,
@@ -117,9 +118,10 @@ class PongServer
   addPlayer: (conn) ->
     @players[conn.id] =
       connection: conn,
-      block: ['left', 'right'][this.playerCount()]
+      block: @availableBlocks.pop()
 
   removePlayer: (conn) ->
+    @availableBlocks.push @players[conn.id].block
     delete @players[conn.id]
 
   playerCount: ->
