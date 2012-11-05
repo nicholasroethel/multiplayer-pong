@@ -50,13 +50,6 @@ class PongServer
       console.log "Added connection #{conn.id}. Player count: #{this.playerCount()}"
       conn.on 'data', this.onData conn
       conn.on 'close', this.onClose conn
-      if this.playerCount() == PongServer.NEEDED_PLAYERS
-        console.log "Got #{PongServer.NEEDED_PLAYERS} players. Starting the game"
-        this.broadcast 'start', null
-        this.setupUpdater()
-        @game.start()
-      else
-        console.log "Waiting for #{PongServer.NEEDED_PLAYERS - this.playerCount()} more players"
 
   onData: (conn) =>
     (msg) =>
@@ -81,6 +74,13 @@ class PongServer
     this.send conn, 'init',
       timestamp: (new Date).getTime(),
       block: block
+    if this.playerCount() == PongServer.NEEDED_PLAYERS
+      console.log "Got #{PongServer.NEEDED_PLAYERS} players. Starting the game"
+      this.broadcast 'start', null
+      this.setupUpdater()
+      @game.start()
+    else
+      console.log "Waiting for #{PongServer.NEEDED_PLAYERS - this.playerCount()} more players"
 
   onUpdate: (conn, data) =>
     console.log "Sending on-demand update to #{conn.id}"

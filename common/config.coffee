@@ -24,3 +24,5 @@ exports.WebPongJSConfig =
     xVelocity: 0.2
     yVelocity: 0.4
     color: 'black'
+  messageBoard:
+    id: 'message_board'

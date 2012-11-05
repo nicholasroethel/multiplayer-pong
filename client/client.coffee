@@ -9,10 +9,18 @@ class Client
     down: 40
 
   constructor: (@conf, @game, @board) ->
-    @sock = null
-    @initialDrift = null
+    @blockName = null
     @context = @board.getContext '2d'
     @controlledBlock = null
+    @initialDrift = null
+    @messageBoard = document.getElementById(@conf.messageBoard.id)
+    @sock = null
+
+  userMessage: (msg, append=false) ->
+    if append
+      @messageBoard.innerHTML += msg
+    else
+      @messageBoard.innerHTML = msg
 
   start: (@sock) ->
     @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
@@ -26,18 +34,16 @@ class Client
       switch msg.type
         when 'init'
           @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
-          if msg.data.block == 'left'
-            @controlledBlock = @game.state.blocks.left
-          else
-            @controlledBlock = @game.state.blocks.right
-          console.log 'Waiting for game start ...'
+          @blockName = msg.data.block
+          @controlledBlock = @game.state.blocks[msg.data.block]
+          this.userMessage 'Waiting for other player'
         when 'start'
-          console.log 'starting game'
           @game.start @initialDrift
           @game.on 'update', this.drawState
           @game.on 'game over', this.gameOver
           document.onkeydown = this.onKeyDown
           document.onkeyup = this.onKeyUp
+          this.userMessage "Game running. You are controlling the #{@blockName} block"
         when 'update'
           @game.update msg.data
         else
