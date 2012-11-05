@@ -5,8 +5,11 @@ Message = exports.WebPongJSMessage
 class Client
 
   @KEYS:
-    up: 38
-    down: 40
+    up: 38,
+    down: 40,
+    j: 74,
+    k: 75,
+
 
   constructor: (@conf, @game, @board) ->
     @blockName = null
@@ -35,7 +38,7 @@ class Client
     @game.on 'game over', this.gameOver
     document.onkeydown = this.onKeyDown
     document.onkeyup = this.onKeyUp
-    this.userMessage "Game running. You are controlling the #{@blockName} block"
+    this.userMessage "Game running. Use the keyboard to control the #{@blockName} block"
 
   onUpdate: (msg) =>
     @game.update msg.data
@@ -70,19 +73,19 @@ class Client
 
   onKeyDown: (ev) =>
     switch ev.keyCode
-      when Client.KEYS.up
+      when Client.KEYS.up, Client.KEYS.k
         @controlledBlock.movingUp = true
         this.send 'moveUp', 'start'
-      when Client.KEYS.down
+      when Client.KEYS.down, Client.KEYS.j
         @controlledBlock.movingDown = true
         this.send 'moveDown', 'start'
 
   onKeyUp: (ev) =>
     switch ev.keyCode
-      when Client.KEYS.up
+      when Client.KEYS.up, Client.KEYS.k
         this.send 'moveUp', 'stop'
         @controlledBlock.movingUp = false
-      when Client.KEYS.down
+      when Client.KEYS.down, Client.KEYS.j
         this.send 'moveDown', 'stop'
         @controlledBlock.movingDown = false
 
