@@ -64,8 +64,7 @@ class Client
 
     @sock.onopen = =>
       this.userMessage 'Connected to server'
-      payload = new Message 'init'
-      @sock.send payload.stringify()
+      this.send 'init', null
 
     @sock.onclose = =>
       this.userMessage 'Server closed the connection. Refresh the page to try again'
