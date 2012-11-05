@@ -23,30 +23,6 @@ class Client
       update: this.onUpdate,
       drop: this.onDrop
 
-  userMessage: (msg) ->
-    @messageBoard.innerHTML = msg
-
-  onInit: (msg) =>
-    @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
-    @blockName = msg.data.block
-    @controlledBlock = @game.state.blocks[msg.data.block]
-    this.userMessage 'Waiting for other player'
-
-  onStart: (msg) =>
-    @game.start @initialDrift
-    @game.on 'update', this.drawState
-    @game.on 'game over', this.gameOver
-    document.onkeydown = this.onKeyDown
-    document.onkeyup = this.onKeyUp
-    this.userMessage "Game running. Use the keyboard to control the #{@blockName} block"
-
-  onUpdate: (msg) =>
-    @game.update msg.data
-
-  onDrop: (msg) =>
-    @game.stop()
-    this.userMessage 'Other player dropped. Waiting for a new player to connect'
-
   start: (@sock) ->
     @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
     @sock.onmessage = (e) =>
@@ -70,6 +46,33 @@ class Client
       this.userMessage 'Server closed the connection. Refresh the page to try again'
       @game.stop()
 
+  onInit: (msg) =>
+    @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
+    @blockName = msg.data.block
+    @controlledBlock = @game.state.blocks[msg.data.block]
+    this.userMessage 'Waiting for other player'
+
+  onStart: (msg) =>
+    @game.start @initialDrift
+    @game.on 'update', this.drawState
+    @game.on 'game over', this.gameOver
+    document.onkeydown = this.onKeyDown
+    document.onkeyup = this.onKeyUp
+    this.userMessage "Game running. Use the keyboard to control the #{@blockName} block"
+
+  onUpdate: (msg) =>
+    @game.update msg.data
+
+  onDrop: (msg) =>
+    @game.stop()
+    this.userMessage 'Other player dropped. Waiting for a new player to connect'
+
+  send: (msgType, msgData) ->
+    @sock.send (new Message msgType, msgData).stringify()
+
+  userMessage: (msg) ->
+    @messageBoard.innerHTML = msg
+
   onKeyDown: (ev) =>
     switch ev.keyCode
       when Client.KEYS.up, Client.KEYS.k
@@ -87,9 +90,6 @@ class Client
       when Client.KEYS.down, Client.KEYS.j
         this.send 'moveDown', 'stop'
         @controlledBlock.movingDown = false
-
-  send: (msgType, msgData) ->
-    @sock.send (new Message msgType, msgData).stringify()
 
   drawLeftBlock: (y) ->
     @context.beginPath()
