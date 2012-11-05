@@ -10,7 +10,6 @@ class Client
     j: 74,
     k: 75,
 
-
   constructor: (@conf, @game, @board) ->
     @blockName = null
     @context = @board.getContext '2d'
