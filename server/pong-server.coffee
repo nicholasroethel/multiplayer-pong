@@ -103,6 +103,9 @@ class PongServer
     for cid, p of @players
       this.send p.connection, type, msg
 
+  broadcastState: =>
+    this.broadcast 'update', @game.state
+
   # Player management methods
   addPlayer: (conn) ->
     @players[conn.id] =
@@ -120,9 +123,6 @@ class PongServer
     if !@updaterId is null
       @updaterId = setInterval this.broadcastState,
         @config.update.syncTime
-
-  broadcastState: =>
-    this.broadcast 'update', @game.state
 
   stopUpdater: ->
     if @updaterId?
