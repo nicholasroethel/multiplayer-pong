@@ -60,11 +60,12 @@ class Client
         console.error "Ignoring unknown message #{msg}"
 
     @sock.onopen = =>
+      this.userMessage 'Connected to server'
       payload = new Message 'init'
       @sock.send payload.stringify()
 
     @sock.onclose = =>
-      console.log 'Connection closed'
+      this.userMessage 'Server closed the connection. Refresh the page to try again'
       @game.stop()
 
   onKeyDown: (ev) =>
