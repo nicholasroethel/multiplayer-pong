@@ -17,10 +17,7 @@ class Client
     @sock = null
 
   userMessage: (msg, append=false) ->
-    if append
-      @messageBoard.innerHTML += msg
-    else
-      @messageBoard.innerHTML = msg
+    @messageBoard.innerHTML = msg
 
   start: (@sock) ->
     @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
