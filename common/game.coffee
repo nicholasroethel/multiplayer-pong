@@ -151,6 +151,18 @@ class Ball
   horizontalPong: ->
     @xVelocity = -@xVelocity
 
+  left: ->
+    @x - @radius
+
+  right: ->
+    @x + @radius
+
+  top: ->
+    @y - @radius
+
+  bottom: ->
+    @y + @radius
+
   # Pong-aware movement
   pongMove: (timeDelta, leftBlock, rightBlock, boardX, boardY) ->
 
