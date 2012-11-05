@@ -42,7 +42,7 @@ class Client
 
   onDrop: (msg) =>
     @game.stop()
-    this.userMessage 'Other player dropped. Game is reset.'
+    this.userMessage 'Other player dropped. Waiting for a new player to connect'
 
   start: (@sock) ->
     @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"

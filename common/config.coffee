@@ -20,7 +20,7 @@ exports.WebPongJSConfig =
     left: color: 'blue'
     right: color: 'red'
   ball:
-    radius: 10
+    radius: 8
     xVelocity: 0.2
     yVelocity: 0.4
     color: 'black'
