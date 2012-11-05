@@ -17,28 +17,29 @@ class Client
   start: (@sock) ->
     @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
     @sock.onmessage = (e) =>
-      msg = Message.parse(e.data)
+      try
+        msg = Message.parse(e.data)
+      catch error
+        console.log "Got message #{e.data}"
+        console.dir e
 
       switch msg.type
         when 'init'
           @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
-          @game.on 'update', this.drawState
-          @game.on 'game over', this.gameOver
-          @game.start @initialDrift
-
           if msg.data.block == 'left'
             @controlledBlock = @game.state.blocks.left
           else
             @controlledBlock = @game.state.blocks.right
-
+          console.log 'Waiting for game start ...'
+        when 'start'
+          console.log 'starting game'
+          @game.start @initialDrift
+          @game.on 'update', this.drawState
+          @game.on 'game over', this.gameOver
           document.onkeydown = this.onKeyDown
           document.onkeyup = this.onKeyUp
-
-        when 'tick'
-          payload = new Message 'update'
-          @sock.send payload.stringify()
         when 'update'
-          #@game.update msg.data
+          @game.update msg.data
         else
           console.log msg.type
 
@@ -51,7 +52,7 @@ class Client
       @game.stop()
 
   onKeyDown: (ev) =>
-    @sock.send (new Message 'moveDown', '')
+    @sock.send (new Message 'moveDown', null).stringify()
     switch ev.keyCode
       when Client.KEYS.up
         @controlledBlock.movingUp = true
@@ -59,7 +60,7 @@ class Client
         @controlledBlock.movingDown = true
 
   onKeyUp: (ev) =>
-    @sock.send (new Message 'moveUp', '')
+    @sock.send (new Message 'moveUp', null).stringify()
     switch ev.keyCode
       when Client.KEYS.up
         @controlledBlock.movingUp = false
