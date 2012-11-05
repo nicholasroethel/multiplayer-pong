@@ -39,7 +39,7 @@ class Game
         if block.movingUp
           block.moveUp()
         else if block.movingDown
-          block.moveDown(@conf.board.size.y)
+          block.moveDown @conf.board.size.y
       @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
       @state.lastUpdate = t
       this.publish 'update', @state
@@ -86,10 +86,10 @@ class Block
     @x + @width
 
   moveUp: ->
-    @y = Math.min(@y - 10, @y)
+    @y = Math.max(@y - 10, 0)
 
   moveDown: (maxY) ->
-    @y = Math.min(@y + 10, maxY)
+    @y = Math.min(@y + 10, maxY - @height)
 
 class Ball
 
