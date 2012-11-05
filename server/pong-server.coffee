@@ -11,12 +11,12 @@ PongGame = pongGame.WebPongJSGame
 Message = message.WebPongJSMessage
 
 class PongServer
+  @NEEDED_PLAYERS: 2
 
   constructor: ->
     @config = config.WebPongJSConfig
-    @intervalUpdaterId = null
-    @clientConnections = {}
-    @server = http.createServer()
+    @players = {}
+    @httpServer = http.createServer()
     @sockServer = sockjs.createServer()
     @sockServer.on 'connection', this.onConnection
     @game = new PongGame @config
@@ -25,32 +25,28 @@ class PongServer
       update: this.onUpdate,
       moveUp: this.onMoveUp,
       moveDown: this.onMoveDown
-
-  broadcast: (type, msg) ->
-    for cid, c of @clientConnections
-      c.write (new Message type, msg).stringify()
+    @updaterId = null
 
   listen: ->
-    @sockServer.installHandlers @server, prefix: @config.server.prefix
-    @server.listen @config.server.port, @config.server.addr
+    @sockServer.installHandlers @httpServer,
+      prefix: @config.server.prefix
+    @httpServer.listen @config.server.port,
+      @config.server.addr
 
+  # SockJS connection handlers
   onConnection: (conn) =>
-    @clientConnections[conn.id] = conn
-
-    conn.on 'data', (msg) =>
-      this.onData conn, msg
-    conn.on 'close', =>
-      this.onClose conn
-
-    connCount = _.keys(@clientConnections).length
-
-    if connCount == 2
-      # 2 players, start game
-      this.setupUpdater()
-      @game.start()
-    else if connCount > 2
-      conn.write (new Message 'close', reason: '2 players already joined')
+    if this.playerCount() >= @NEEDED_PLAYERS
+      this.send conn, 'close', 'Cannot join. Game is full'
       conn.close()
+    else
+      conn.on 'data', this.onData
+      conn.on 'close', this.onClose
+      this.addPlayer conn
+      if this.playerCount() == @NEEDED_PLAYERS
+        console.log 'Got 2 players. Starting game'
+        this.send conn, 'start', null
+        this.setupUpdater()
+        @game.start()
 
   onData: (conn, msg) =>
     console.log "Got message #{msg} from #{conn.id}"
@@ -59,43 +55,68 @@ class PongServer
     if handler?
       handler conn, msg.data
 
+  onClose: (conn, data) =>
+    console.log "Connection #{conn.id} closed"
+    this.removePlayer conn
+    this.stopUpdater()
+    @game.stop()
+    this.broadcast 'drop', null
+    console.log "Game stopped, due to player connection #{conn.id} drop"
+
+  # Message handlers
   onInit: (conn, data) =>
-    if _.keys(@clientConnections).length == 1
-      block = 'left'
-    else
-      block = 'right'
-    conn.write (new Message 'init',
+    block = @players[conn.id].block
+    this.send 'init',
       timestamp: (new Date).getTime(),
       block: block
-    ).stringify()
 
   onUpdate: (conn, data) =>
-    conn.write (new Message 'update', @game.state).stringify()
+    this.send conn 'update', @game.state
 
   onMoveUp: (conn, data) =>
-    console.log 'move up'
+    @game.state.blocks[@players[conn.id].block].moveUp()
+    this.broadcast 'update', @game.state
 
   onMoveDown: (conn, data) =>
-    console.log 'move down'
+    @game.state.blocks[@players[conn.id].block].moveDown()
+    this.broadcast 'update', @game.state
 
-  onClose: (conn, data) =>
-    console.log "Connection #{conn.id} closed, cleaning up"
-    delete @clientConnections[conn.id]
-    if utils.isEmpty(@clientConnections) and @intervalUpdaterId?
-      clearInterval @intervalUpdaterId
-      @intervalUpdaterId = null
-    console.log "Finished cleanup of closed connection #{conn.id}"
-    @game.stop()
+  # Connection helper methods
+  send: (conn, msgType, msgData) =>
+    conn.write (new Message msgType, msgData).stringify()
 
+  broadcast: (type, msg) ->
+    for cid, p of @players
+      this.send p.connection, type, msg
+
+  # Players management
+  addPlayer: (conn) ->
+    @players[conn.id] =
+      connection: conn,
+      block: ['left', 'right'][this.playerCount()]
+
+  removePlayer: (conn) ->
+    delete @players[conn.id]
+
+  playerCount: ->
+    _.keys(@players).length
+
+  # Periodic client updates
   setupUpdater: ->
-    if !@intervalUpdaterId?
-      console.log @config.update.interval
-      ticker = =>
-        this.broadcast 'tick', @game.state.lastUpdate
-      @intervalUpdaterId = setInterval ticker, @config.update.syncTime
+    if !@updaterId is null
+      @updaterId = setInterval this.broadcastState,
+        @config.update.syncTime
+
+  broadcastState: =>
+    this.broadcast 'update', @game.state.lastUpdate
+
+  stopUpdater: ->
+    if @updaterId?
+      clearInterval @updaterId
+      @updaterId = null
 
 main = ->
-  console.log 'Starting Pong server...'
+  console.log 'Starting Pong Server'
   pongServer = new PongServer
   pongServer.listen()
 
