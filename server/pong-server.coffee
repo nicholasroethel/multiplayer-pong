@@ -40,18 +40,23 @@ class PongServer
 
   # SockJS connection handlers
   onConnection: (conn) =>
-    if this.playerCount() >= @NEEDED_PLAYERS
+    console.log "New connection #{conn.id} opened"
+    if this.playerCount() >= PongServer.NEEDED_PLAYERS
+      console.log "Rejected connection #{conn.id} due to full game"
       this.send conn, 'close', 'Cannot join. Game is full'
       conn.close()
     else
+      this.addPlayer conn
+      console.log "Added connection #{conn.id}. Player count: #{this.playerCount()}"
       conn.on 'data', this.onData conn
       conn.on 'close', this.onClose conn
-      this.addPlayer conn
-      if this.playerCount() == @NEEDED_PLAYERS
-        console.log 'Got 2 players. Starting game'
-        this.send conn, 'start', null
+      if this.playerCount() == PongServer.NEEDED_PLAYERS
+        console.log "Got #{PongServer.NEEDED_PLAYERS} players. Starting the game"
+        this.broadcast 'start', null
         this.setupUpdater()
         @game.start()
+      else
+        console.log "Waiting for #{PongServer.NEEDED_PLAYERS - this.playerCount()} more players"
 
   onData: (conn) =>
     (msg) =>
@@ -78,14 +83,15 @@ class PongServer
       block: block
 
   onUpdate: (conn, data) =>
+    console.log "Sending on-demand update to #{conn.id}"
     this.send conn 'update', @game.state
 
   onMoveUp: (conn, data) =>
-    @game.state.blocks[@players[conn.id].block].moveUp()
+    @game.state.blocks[@players[conn.id].block].movingUp = data == 'start'
     this.broadcast 'update', @game.state
 
   onMoveDown: (conn, data) =>
-    @game.state.blocks[@players[conn.id].block].moveDown()
+    @game.state.blocks[@players[conn.id].block].movingDown = data == 'start'
     this.broadcast 'update', @game.state
 
   # Connection helper methods
@@ -93,17 +99,18 @@ class PongServer
     try
       msg = (new Message msgType, msgData).stringify()
     catch e
-      console.error "Could not serialize message: type:#{msgType}, data:#{msgData} for sending to #{conn}"
+      console.error "Could not serialize message: type:#{msgType}, data:#{msgData} for sending to #{conn.id}"
     try
       conn.write msg
     catch e
-      console.error "Could not send message #{msg} to #{conn}: #{e}"
+      console.error "Could not send message #{msg} to #{conn.id}: #{e}"
 
   broadcast: (type, msg) ->
     for cid, p of @players
       this.send p.connection, type, msg
 
   broadcastState: =>
+    console.log "Broadcasting state"
     this.broadcast 'update', @game.state
 
   # Player management methods
@@ -120,9 +127,8 @@ class PongServer
 
   # Periodic client updates
   setupUpdater: ->
-    if !@updaterId is null
-      @updaterId = setInterval this.broadcastState,
-        @config.update.syncTime
+    if !@updaterId?
+      @updaterId = setInterval this.broadcastState, @config.update.syncTime
 
   stopUpdater: ->
     if @updaterId?

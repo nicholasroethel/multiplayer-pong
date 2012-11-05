@@ -52,20 +52,25 @@ class Client
       @game.stop()
 
   onKeyDown: (ev) =>
-    @sock.send (new Message 'moveDown', null).stringify()
     switch ev.keyCode
       when Client.KEYS.up
         @controlledBlock.movingUp = true
+        this.send 'moveUp', 'start'
       when Client.KEYS.down
         @controlledBlock.movingDown = true
+        this.send 'moveDown', 'start'
 
   onKeyUp: (ev) =>
-    @sock.send (new Message 'moveUp', null).stringify()
     switch ev.keyCode
       when Client.KEYS.up
+        this.send 'moveUp', 'stop'
         @controlledBlock.movingUp = false
       when Client.KEYS.down
+        this.send 'moveDown', 'stop'
         @controlledBlock.movingDown = false
+
+  send: (msgType, msgData) ->
+    @sock.send (new Message msgType, msgData).stringify()
 
   drawLeftBlock: (y) ->
     @context.beginPath()
