@@ -4,10 +4,15 @@ Message = exports.WebPongJSMessage
 
 class Client
 
+  @KEYS:
+    up: 38
+    down: 40
+
   constructor: (@conf, @game, @board) ->
     @sock = null
     @initialDrift = null
     @context = @board.getContext '2d'
+    @controlledBlock = null
 
   start: (@sock) ->
     @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
@@ -16,24 +21,18 @@ class Client
 
       switch msg.type
         when 'init'
-          @initialDrift = Number(msg.data) - (new Date).getTime()
+          @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
           @game.on 'update', this.drawState
           @game.on 'game over', this.gameOver
           @game.start @initialDrift
 
-          document.onkeyup = (ev) =>
-            switch ev.keyCode
-              when 38
-                @game.state.blocks.left.movingUp = false
-              when 40
-                @game.state.blocks.left.movingDown = false
+          if msg.data.block == 'left'
+            @controlledBlock = @game.state.blocks.left
+          else
+            @controlledBlock = @game.state.blocks.right
 
-          document.onkeydown = (ev) =>
-            switch ev.keyCode
-              when 38
-                @game.state.blocks.left.movingUp = true
-              when 40
-                @game.state.blocks.left.movingDown = true
+          document.onkeydown = this.onKeyDown
+          document.onkeyup = this.onKeyUp
 
         when 'tick'
           payload = new Message 'update'
@@ -50,6 +49,22 @@ class Client
     @sock.onclose = =>
       console.log 'Connection closed'
       @game.stop()
+
+  onKeyDown: (ev) =>
+    @sock.send (new Message 'moveDown', '')
+    switch ev.keyCode
+      when Client.KEYS.up
+        @controlledBlock.movingUp = true
+      when Client.KEYS.down
+        @controlledBlock.movingDown = true
+
+  onKeyUp: (ev) =>
+    @sock.send (new Message 'moveUp', '')
+    switch ev.keyCode
+      when Client.KEYS.up
+        @controlledBlock.movingUp = false
+      when Client.KEYS.down
+        @controlledBlock.movingDown = false
 
   drawLeftBlock: (y) ->
     @context.beginPath()

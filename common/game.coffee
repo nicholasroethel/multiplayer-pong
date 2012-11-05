@@ -29,7 +29,7 @@ class Game
     clearInterval @playIntervalId
     @playIntervalId = null
     # @state = this.initialState()
-    this.publish 'update', @state
+    # this.publish 'update', @state
 
   play: (drift) ->
     t = (new Date()).getTime() - drift

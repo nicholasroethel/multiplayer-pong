@@ -1,5 +1,6 @@
 http = require 'http'
 sockjs = require 'sockjs'
+_ = require 'underscore'
 
 pongGame = require '../common/game'
 config = require '../common/config'
@@ -22,7 +23,8 @@ class PongServer
     @handlers =
       init: this.onInit,
       update: this.onUpdate,
-      action: this.onAction,
+      moveUp: this.onMoveUp,
+      moveDown: this.onMoveDown
 
   broadcast: (type, msg) ->
     for cid, c of @clientConnections
@@ -40,8 +42,15 @@ class PongServer
     conn.on 'close', =>
       this.onClose conn
 
-    this.setupUpdater()
-    @game.start()
+    connCount = _.keys(@clientConnections).length
+
+    if connCount == 2
+      # 2 players, start game
+      this.setupUpdater()
+      @game.start()
+    else if connCount > 2
+      conn.write (new Message 'close', reason: '2 players already joined')
+      conn.close()
 
   onData: (conn, msg) =>
     console.log "Got message #{msg} from #{conn.id}"
@@ -51,13 +60,23 @@ class PongServer
       handler conn, msg.data
 
   onInit: (conn, data) =>
-    conn.write (new Message 'init', (new Date).getTime()).stringify()
+    if _.keys(@clientConnections).length == 1
+      block = 'left'
+    else
+      block = 'right'
+    conn.write (new Message 'init',
+      timestamp: (new Date).getTime(),
+      block: block
+    ).stringify()
 
   onUpdate: (conn, data) =>
     conn.write (new Message 'update', @game.state).stringify()
 
-  onAction: (conn, data) =>
-    console.log 'on action!'
+  onMoveUp: (conn, data) =>
+    console.log 'move up'
+
+  onMoveDown: (conn, data) =>
+    console.log 'move down'
 
   onClose: (conn, data) =>
     console.log "Connection #{conn.id} closed, cleaning up"
