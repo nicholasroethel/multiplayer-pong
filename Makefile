@@ -19,5 +19,7 @@ compile:
 wcompile:
 	$(COFFEE) --watch $(CCOMPILE)
 
+fast-run: install-modules compile run-server
+
 test:
 	$(MOCHA) --reporter list --compilers coffee:coffee-script --watch $(TESTS)
