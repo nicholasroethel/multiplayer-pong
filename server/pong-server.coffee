@@ -142,4 +142,6 @@ main = ->
   pongServer = new PongServer
   pongServer.listen()
 
-main()
+exports.WebPongJSServer = PongServer
+
+main() if require.main is module
