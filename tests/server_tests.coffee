@@ -21,7 +21,6 @@ class MockConnection
 
   write: (data) ->
     @buffer.push data
-    console.log 'data: ', data
 
   testReadFromBuffer: ->
     Message.parse @buffer.pop()
