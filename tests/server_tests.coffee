@@ -8,7 +8,7 @@ message = require('../common/message')
 
 Ball = game.WebPongJSBall
 Block = game.WebPongJSBlock
-Game = game.WebPongJSGame
+Game = game.WebPongJSServerGame
 Server = server.PongServer
 Message = message.WebPongJSMessage
 
@@ -120,11 +120,10 @@ describe 'Server', ->
 
     conn.testSendToServer 'init', null
     resp = conn.testReadFromBuffer()
-    console.log resp.type
     resp.type.should.equal 'init'
     resp.data.block.should.equal 'right'
 
-  it 'should save input buffers', ->
+  it 'should save input updates from clients', ->
     s = new Server
     sockServer = new MockSockJsServer
     httpServer = new MockHttpServer
@@ -135,11 +134,12 @@ describe 'Server', ->
     conn = new MockConnection 'conn1'
     sockServer.callbacks['connection'](conn)
 
+    conn.testSendToServer 'init', null
+    resp = conn.testReadFromBuffer()
+    block = resp.data.block
+
     conn.testSendToServer 'input', {buffer: ['up', 'up'], index: 0}
     conn.testSendToServer 'input', {buffer: ['up', 'down'], index: 1}
-    s.players[conn.id].inputUpdates.length.should.equal 2
+    s.game.inputUpdates[block].updates.length.should.equal 2
 
-    s.processInputs()
-    s.game.state.blocks.right.movingUp.should.equal 3
-    s.game.state.blocks.right.movingDown.should.equal 1
-    s.players[conn.id].inputIndex.should.equal 1
+    s.game.processInputs()

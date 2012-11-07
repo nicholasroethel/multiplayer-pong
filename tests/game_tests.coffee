@@ -6,9 +6,9 @@ utils = require('../common/utils')
 
 Ball = game.WebPongJSBall
 Block = game.WebPongJSBlock
-Game = game.WebPongJSGame
+Game = game.WebPongJSServerGame
 
-describe 'Game', ->
+describe 'ServerGame', ->
   it 'should store configuration and initialize state', ->
     g = new Game config
     g.state.ball.should.be.an.instanceOf Ball

@@ -7,7 +7,7 @@ config = require '../common/config'
 utils = require '../common/utils'
 message = require '../common/message'
 
-PongGame = pongGame.WebPongJSGame
+PongGame = pongGame.WebPongJSServerGame
 Message = message.WebPongJSMessage
 
 class PongServer
@@ -85,15 +85,8 @@ class PongServer
   onUpdate: (conn, data) =>
     throw "Deprecated"
 
-  processInputs: ->
-    for cid, p of @players
-      block = @game.state.blocks[p.block]
-      if p.inputUpdates.length > 0
-        @game.processInputs block, p.inputUpdates, p.inputIndex
-        p.inputIndex = (_.last p.inputUpdates).index
-
   onInput: (conn, data) =>
-    @players[conn.id].inputUpdates.push data
+    @game.addInputUpdate @players[conn.id].block, data
 
   # Connection helper methods
   send: (conn, msgType, msgData) =>
@@ -111,12 +104,11 @@ class PongServer
       this.send p.connection, type, msg
 
   broadcastState: =>
-    this.processInputs()
     console.log "Broadcasting state"
     for cid, p of @players
       this.send p.connection, 'update',
         state: @game.state
-        inputs: p.inputIndex
+        inputIndex: p.inputIndex
 
   # Player management methods
   addPlayer: (conn) ->
