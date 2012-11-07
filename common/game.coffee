@@ -333,7 +333,7 @@ class Ball
     # Ball moves downwards and hits the block's top wall
     # or ball moves upwards and hits the block's bottom wall
     bounce.y = xWithin and
-      ((@yVelocity > 0 and if Math.abs(@y-block.top()) <= @radius) or
+      ((@yVelocity > 0 and Math.abs(@y-block.top()) <= @radius) or
       Math.abs(@y-block.bottom()) <= @radius)
 
     return bounce
