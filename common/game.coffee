@@ -118,11 +118,11 @@ class ClientGame extends Game
 
   play: (drift) ->
     # Compute the game state in the past, as specified by @conf.client.latency,
-    # so we can interpolate between the two server updates `now` falls between.
+    # so we can interpolate between the two server updates `currentTime` falls between.
     currentTime = (new Date).getTime() - drift - @conf.client.interpLatency
     timeDelta = currentTime - @state.lastUpdate
 
-    # Time to update
+    # Time to update.
     if timeDelta >= @conf.update.interval
       # Get any input from the client, send to server
       this.sampleInput timeDelta
@@ -181,13 +181,13 @@ class ClientGame extends Game
     @state.ball.x = lerp prev.ball.x, next.ball.x, t
     @state.ball.y = lerp prev.ball.y, next.ball.y, t
 
-    # Interpolate the block that we are not controlling
+    # Interpolate only the block that we are not controlling
     for block, blockId in @state.blocks
       if blockId != blockId
         block.y = lerp prev.blocks[blockId].y, next.blocks[blockId].y, t
 
   sampleInput: (timeDelta) ->
-    # Sample the user input, package it up and send it to the server
+    # Sample the user input, package it up and publish it.
     # The input index is a unique identifier of the input sample.
     inputs = []
     if this.controlledBlock().movingUp
@@ -312,7 +312,6 @@ class Ball
   # moving too fast the ball could get "stuck inside it".  But it works well
   # enough for our purposes.
   blockPong: (block) ->
-    bounce = x: false, y: false
 
     # Wheter ball and block are horizontally aligned
     xWithin = block.left() <= this.right() <= block.right() or
