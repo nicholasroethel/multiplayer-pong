@@ -133,17 +133,31 @@ if window?
         sock = new MockSocket
         c.start sock
 
-        c.onUpdate {type: 'update', data: game.state}
+        c.inputsBuffer = [{buffer: ['up'], index: 1}, {buffer: ['up'], index: 2}, {buffer: ['down'], index: 3}]
+        c.onInit type: 'init', data: block: 'left'
+
+        c.onUpdate type: 'update', data:
+          state: game.state
+          inputIndex: 0
+        expect(c.inputsBuffer.length).to.be 3
         expect(c.serverUpdates.length).to.be 1
-        c.onUpdate {type: 'update', data: game.state}
+        c.onUpdate type: 'update', data:
+          state: game.state
+          inputIndex: 1
+        expect(c.inputsBuffer.length).to.be 2
         expect(c.serverUpdates.length).to.be 2
-        c.onUpdate {type: 'update', data: game.state}
+        c.onUpdate type: 'update', data:
+          state: game.state
+          inputIndex: 2
         expect(c.serverUpdates.length).to.be 3
         oldUpdateCount = Client.SERVERUPDATES
         Client.SERVERUPDATES = 3
-        c.onUpdate {type: 'update', data: game.state}
+        c.onUpdate type: 'update', data:
+          state: game.state
+          inputIndex: 3
         expect(c.serverUpdates.length).to.be 3
         Client.SERVERUPDATES = oldUpdateCount
+        expect(c.serverUpdates.length).to.be 3
 
       it 'should do linear interpolation', ->
         canvas = new MockCanvas conf.board.size.x, conf.board.size.y
@@ -151,6 +165,7 @@ if window?
         c = new Client conf, game, canvas
         sock = new MockSocket
         c.start sock
+        c.onInit type: 'init', data: block: 'left'
 
         prev = game.cloneState c.game.state
         next = game.cloneState c.game.state
@@ -174,9 +189,7 @@ if window?
         c.game.state.blocks.left.y = 33
         c.game.state.currentTime = now + 15
 
-        # Only check it doesn't throw an exception for now
         c.magic()
-
         expect(c.game.state.blocks.left.y).to.be 325
         expect(c.game.state.ball.x).to.be 150
         expect(c.game.state.ball.y).to.be 250

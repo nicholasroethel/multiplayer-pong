@@ -69,6 +69,13 @@ class Client
     # Delete old updates which we should not be needing
     if @serverUpdates.length > Client.SERVERUPDATES
       @serverUpdates.splice(0, 1)
+    this.discardAcknowledgedInput msg.data
+    # Set position by authorative server
+    @controlledBlock = msg.data.state.blocks[@blockName].y
+    @game.processInputs @controlledBlock, @inputsBuffer, @inputIndex
+
+  discardAcknowledgedInput: (serverUpdate) ->
+    @inputsBuffer = (input for input in @inputsBuffer when input.index > serverUpdate.inputIndex)
 
   onDrop: (msg) =>
     @game.stop()
@@ -121,7 +128,7 @@ class Client
     @context.fill()
 
   onGameUpdate: (ev, state) =>
-    this.processInput()
+    #this.processInput()
     this.magic()
     this.drawState ev, state
 
@@ -132,7 +139,7 @@ class Client
       # No updates from the server yet
       return
 
-    now = (_.last @serverUpdates).lastUpdate - @conf.client.latency
+    now = (new Date).getTime() - @game.drift
 
     # By default use the first update
     prev = next = @serverUpdates[0]
@@ -140,17 +147,17 @@ class Client
     # Find our
     if updateCount >= 2
       i = _.find [1..updateCount-1], (i) =>
-        @serverUpdates[i-1].lastUpdate <= now <= @serverUpdates[i].lastUpdate
+        @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
       if i?
         prev = @serverUpdates[i-1]
         next = @serverUpdates[i]
 
     # Get the wand.
-    t = (next.lastUpdate - now) / (next.lastUpdate - prev.lastUpdate)
+    t = (next.state.lastUpdate - now) / (next.state.lastUpdate - prev.state.lastUpdate + 0.01)
 
     # Magic!
     # No, seriously. This does interpolation of the 2 server positions we're between
-    @game.lerp prev, next, t
+    @game.lerp prev.state, next.state, t
 
   processInput: ->
     inputs = []

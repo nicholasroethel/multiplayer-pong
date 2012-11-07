@@ -83,16 +83,14 @@ class PongServer
       console.log "Waiting for #{PongServer.NEEDED_PLAYERS - this.playerCount()} more players"
 
   onUpdate: (conn, data) =>
-    console.log "Sending on-demand update to #{conn.id}"
-    this.processInputs()
-    this.send conn 'update',
-      state: @game.state
+    throw "Deprecated"
 
   processInputs: ->
     for cid, p of @players
       block = @game.state.blocks[p.block]
-      @game.processInputs block, p.inputUpdates, p.inputIndex
-      p.inputIndex = (_.last p.inputUpdates).index
+      if p.inputUpdates.length > 0
+        @game.processInputs block, p.inputUpdates, p.inputIndex
+        p.inputIndex = (_.last p.inputUpdates).index
 
   onInput: (conn, data) =>
     @players[conn.id].inputUpdates.push data
@@ -113,16 +111,20 @@ class PongServer
       this.send p.connection, type, msg
 
   broadcastState: =>
+    this.processInputs()
     console.log "Broadcasting state"
-    this.broadcast 'update', @game.state
+    for cid, p of @players
+      this.send p.connection, 'update',
+        state: @game.state
+        inputs: p.inputIndex
 
   # Player management methods
   addPlayer: (conn) ->
     @players[conn.id] =
-      connection: conn,
-      block: @availableBlocks.pop(),
-      inputUpdates: [],
-      inputIndex: -1,
+      connection: conn
+      block: @availableBlocks.pop()
+      inputUpdates: []
+      inputIndex: -1
 
   removePlayer: (conn) ->
     @availableBlocks.push @players[conn.id].block

@@ -69,14 +69,15 @@ class Game
   lerp: (prev, next, t) ->
     # XXX: replace @conf.update.interval with actual time passed since last
     # update
-    @state = this.statelerp @state, (this.statelerp prev, next, t), @conf.update.interval
+    @state = this.statelerp @state, (this.statelerp prev, next, t), (new Date).getTime() - @state.lastUpdate - @initialDrift
+    console.log @state.lastUpdate
 
   getBlocks: ->
     [@state.blocks.left, @state.blocks.right]
 
   statelerp: (prev, next, t) ->
     lerp = (p, n) ->
-      p + (Math.max(0, Math.min(1, t))) * (n - p)
+      res = p + (Math.max(0, Math.min(1, t))) * (n - p)
     newState = this.cloneState prev
     for b in ['left', 'right']
       newState.blocks[b].y = lerp prev.blocks[b].y, next.blocks[b].y
