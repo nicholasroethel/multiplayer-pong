@@ -324,17 +324,14 @@ class Ball
       block.top() <= this.top() <= block.bottom() or
       this.top() <= block.top() <= block.bottom() <= this.bottom()
 
-    # Ball moves left-to-right and hits the block's left wall
-    # or ball move right-to-left and hits the block's right wall
+    # Moving right, check left border
     bounce.x = yWithin and
-      ((@xVelocity > 0 and Math.abs(@x-block.left()) <= @radius) or
-    Math.abs(@x-block.right()) <= @radius)
+      ((@xVelocity > 0 and Math.abs(@x-block.left() <= @radius) or
+      (@xVelocity < 0 and Math.abs(@x-block.right() <= @radius))
 
-    # Ball moves downwards and hits the block's top wall
-    # or ball moves upwards and hits the block's bottom wall
     bounce.y = xWithin and
       ((@yVelocity > 0 and Math.abs(@y-block.top()) <= @radius) or
-      Math.abs(@y-block.bottom()) <= @radius)
+      (@yVelocity < 0 and Math.abs(@y-block.bottom()) <= @radius))
 
     return bounce
 
