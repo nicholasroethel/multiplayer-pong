@@ -41,8 +41,6 @@ class Game
     console.log 'stop'
     clearInterval @playIntervalId
     @playIntervalId = null
-    # @state = this.initialState()
-    # this.publish 'update', @state
 
   play: (drift) ->
     throw "play is not implemented in abstract base class Game"
@@ -95,10 +93,7 @@ class ServerGame extends Game
         block = @state.blocks[blockId]
         for input in updateEntry.updates
           for cmd in input.buffer
-            if cmd == 'down'
-              block.moveDown input.duration, @conf.board.size.y
-            else if cmd == 'up'
-              block.moveUp input.duration
+            block.move cmd, input.duration, @conf.board.size.y
         # We just processed these, so clear the buffer, and move the input index
         updateEntry.inputIndex = (_.last updateEntry.updates).index
         updateEntry.updates = []
@@ -154,12 +149,7 @@ class ClientGame extends Game
     # "Replay" all user input that is not yet acknowledged by the server
     for input in @inputsBuffer
       for dir in input.buffer
-        this.controlledBlock().move dir, input.duration, [@conf.board.size.y, @confi.board.size.x][dir]
-        switch cmd
-          when 'up'
-            this.controlledBlock().moveUp input.duration
-          when 'down'
-            this.controlledBlock().moveDown input.duration, @conf.board.size.y
+        this.controlledBlock().move dir, input.duration, @conf.board.size.y
 
   interpolateState: (now) ->
     updateCount = @serverUpdates.length
@@ -256,6 +246,15 @@ class Block
 
   right: ->
     @x + @width
+
+  move: (dir, duration, maxValue) ->
+    switch dir
+      when 'down'
+        this.moveDown duration, maxValue
+      when 'up'
+        this.moveUp duration, maxValue
+      else
+        throw "Block can only move up and down, not #{dir}"
 
   moveUp: (t) ->
     @y = Math.max(@y - t*0.5, 0)
