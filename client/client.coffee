@@ -11,7 +11,7 @@ class Client
     k: 75,
 
   constructor: (@conf, @game, @board) ->
-    @blockName = null
+    @blockId = null
     @context = @board.getContext '2d'
     @controlledBlock = null
     @initialDrift = null
@@ -47,9 +47,9 @@ class Client
 
   onInit: (msg) =>
     @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
-    @blockName = msg.data.block
+    @blockId = msg.data.block
     @controlledBlock = @game.state.blocks[msg.data.block]
-    @game.setBlock @blockName
+    @game.setBlock @blockId
     this.userMessage 'Waiting for other player'
 
   onStart: (msg) =>
@@ -59,7 +59,7 @@ class Client
     @game.on 'input', this.onGameInput
     document.onkeydown = this.onKeyDown
     document.onkeyup = this.onKeyUp
-    this.userMessage "Game running. Use the keyboard to control the #{@blockName} block"
+    this.userMessage "Game running. Use the keyboard to control the #{@conf.block.names[@blockId]} block"
 
   onUpdate: (msg) =>
     @game.addServerUpdate msg.data
