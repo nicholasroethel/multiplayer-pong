@@ -5,6 +5,9 @@ exports.WebPongJSConfig =
     addr: '0.0.0.0',
     port: 8089,
     prefix: '/pong',
+  client:
+    latency: 200, # Clients run 200ms in the past
+    smooth: 25,
   update:
     # milliseconds
     interval: 30,   # Game update intervals, ms.

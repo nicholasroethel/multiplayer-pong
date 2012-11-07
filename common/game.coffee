@@ -6,6 +6,7 @@ class Game
     @state = this.initialState()
     @callbacks = {}
     @playIntervalId = null
+    @currentTime = (new Date()).getTime()
 
   initialState: ->
     centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
@@ -32,16 +33,19 @@ class Game
     # this.publish 'update', @state
 
   play: (drift) ->
-    t = (new Date()).getTime() - drift
-    timeDelta = t - @state.lastUpdate
+    currentTime = (new Date()).getTime() - drift
+    timeDelta = currentTime - @state.lastUpdate
     if timeDelta >= @conf.update.interval
-      for block in [@state.blocks.left, @state.blocks.right]
-        if block.movingUp
+      for block in this.getBlocks()
+        # XXX: This, of course, is stupid.
+        # Should instead have a "move" property with a numerical value (<0 for
+        # moving up, >0 for moving down)
+        for i in [0...block.movingUp]
           block.moveUp()
-        else if block.movingDown
-          block.moveDown @conf.board.size.y
+        for i in [0...block.movingDown]
+          block.moveDown()
       @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
-      @state.lastUpdate = t
+      @state.lastUpdate = currentTime
       this.publish 'update', @state
 
   update: (state) ->
@@ -50,6 +54,27 @@ class Game
     @state.blocks.left.update state.blocks.left
     @state.blocks.right.update state.blocks.right
     this.publish 'update', @state
+
+  # Calculates the game state using linear interpolation given known previous
+  # and next states.
+  lerp: (t, prev, next) ->
+    # XXX: replace @conf.update.interval with actual time passed since last
+    # update
+    @state = this.statelerp @conf.update.interval, @state, (statelerp prev, next, t)
+
+  getBlocks: ->
+    [@state.blocks.left, @state.blocks.right]
+
+  statelerp: (t, prev, next) ->
+    lerp = (p, n) ->
+      p + (Math.max(0, Math.min(1, t))) * (n - p)
+
+    newState = _.clone prev
+    for b in ['left', 'right']
+      newState.blocks[b].y = lerp prev.blocks[b].y, next.blocks[b].y
+    for axis in ['x', 'y']
+      newState.ball[axis] = lerp prev.ball[axis], next.ball[axis]
+    newState
 
   on: (event, callback) ->
     if not (event of @callbacks)
@@ -61,11 +86,21 @@ class Game
       for callback in @callbacks[event]
         callback(event, data)
 
+  processInputs: (block, inputUpdates, inputIndex) ->
+    block.movingUp = block.movingDown = 0
+    for input in inputUpdates
+      if input.index > inputIndex
+        for m in input.buffer
+          if m == 'up'
+            block.movingUp += 1
+          else if m == 'down'
+            block.movingDown += 1
+
 class Block
 
   constructor: (@x, @y, @width, @height) ->
-    @movingUp = false
-    @movingDown = false
+    @movingUp = 0
+    @movingDown = 0
 
   update: (data) ->
     @x = data.x

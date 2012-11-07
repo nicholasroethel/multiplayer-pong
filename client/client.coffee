@@ -10,7 +10,12 @@ class Client
     j: 74,
     k: 75,
 
+  @SERVERUPDATES: 100
+
   constructor: (@conf, @game, @board) ->
+    @serverUpdates = []
+    @inputsBuffer = []
+    @inputIndex = 0
     @blockName = null
     @context = @board.getContext '2d'
     @controlledBlock = null
@@ -53,14 +58,17 @@ class Client
 
   onStart: (msg) =>
     @game.start @initialDrift
-    @game.on 'update', this.drawState
-    @game.on 'game over', this.gameOver
+    @game.on 'update', this.onGameUpdate
+    @game.on 'game over', this.onGameOver
     document.onkeydown = this.onKeyDown
     document.onkeyup = this.onKeyUp
     this.userMessage "Game running. Use the keyboard to control the #{@blockName} block"
 
   onUpdate: (msg) =>
-    @game.update msg.data
+    @serverUpdates.push msg.data
+    # Delete old updates which we should not be needing
+    if @serverUpdates.length > Client.SERVERUPDATES
+      @serverUpdates = @serverUpdates.splice(0, 1)
 
   onDrop: (msg) =>
     @game.stop()
@@ -75,20 +83,20 @@ class Client
   onKeyDown: (ev) =>
     switch ev.keyCode
       when Client.KEYS.up, Client.KEYS.k
-        @controlledBlock.movingUp = true
+        @controlledBlock.movingUp = 1
         this.send 'moveUp', 'start'
       when Client.KEYS.down, Client.KEYS.j
-        @controlledBlock.movingDown = true
+        @controlledBlock.movingDown = 1
         this.send 'moveDown', 'start'
 
   onKeyUp: (ev) =>
     switch ev.keyCode
       when Client.KEYS.up, Client.KEYS.k
         this.send 'moveUp', 'stop'
-        @controlledBlock.movingUp = false
+        @controlledBlock.movingUp = 0
       when Client.KEYS.down, Client.KEYS.j
         this.send 'moveDown', 'stop'
-        @controlledBlock.movingDown = false
+        @controlledBlock.movingDown = 0
 
   drawLeftBlock: (y) ->
     @context.beginPath()
@@ -112,13 +120,59 @@ class Client
     @context.closePath()
     @context.fill()
 
+  onGameUpdate: (ev, state) =>
+    this.processInput()
+    this.magic()
+    this.drawState ev, state
+
+  magic: ->
+    updateCount = @serverUpdates.length
+
+    if updateCount == 0
+      # No updates from the server yet
+      return
+
+    now = (_.last @serverUpdates) - @conf.client.latency
+
+    # By default use the first update
+    prev = next = @serverUpdates[0]
+
+    # Find our
+    if updateCount >= 2
+      i = _.find [1..updateCount-1], ->
+        @serverUpdates[i-1] <= now <= @serverUpdates[i]
+      if i?
+        prev = @serverUpdates[i-1]
+        next = @serverUpdates[i]
+
+    # Get the wand.
+    t = (next.lastUpdate - now) / (next.lastUpdate - prev.lastUpdate)
+
+    # Magic!
+    # No, seriously. This does interpolation of the 2 server positions we're between
+    @game.lerp t, prev
+
+  processInput: ->
+    inputs = []
+    if @controlledBlock.movingUp
+      inputs.push 'up'
+    if @controlledBlock.movingDown
+      inputs.push 'down'
+    if inputs.length > 0
+      @inputIndex += 1
+      inputEntry =
+        buffer: inputs,
+        index: inputIndex
+      @inputsBuffer.push inputEntry
+      this.send 'input', inputEntry
+
   drawState: (ev, state) =>
     @context.clearRect 0, 0, @board.width, @board.height
     this.drawBall state.ball.x, state.ball.y
     this.drawLeftBlock state.blocks.left.y
     this.drawRightBlock state.blocks.right.y
 
-  gameOver: (ev, data) =>
+  onGameOver: (ev, data) =>
     # Temp placeholder
     window.alert 'Game over!'
 
