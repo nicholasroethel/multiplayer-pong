@@ -6,12 +6,11 @@ exports.WebPongJSConfig =
     port: 8089,
     prefix: '/pong',
   client:
-    latency: 200, # Clients run 200ms in the past
-    smooth: 25,
+    interpLatency: 120, # interpolation latency interval
   update:
     # milliseconds
-    interval: 30,   # Game update intervals, ms.
-    syncTime: 300, # Server sync period
+    interval: 25,   # Game update intervals, ms.
+    syncTime: 50, # Server sync period
     maxDrift: 100,  # Maximum drift for each client
   board:
     id: 'board'
