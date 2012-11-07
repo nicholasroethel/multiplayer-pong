@@ -124,3 +124,59 @@ if window?
         msg = Message.parse(c.sock.buffer[0])
         expect(msg.type).to.be 'init'
         expect(msg.data).to.be ''
+
+    describe 'syncrhonization', ->
+      it 'should buffer server updates', ->
+        canvas = new MockCanvas conf.board.size.x, conf.board.size.y
+        game = new window.WebPongJSGame conf
+        c = new Client conf, game, canvas
+        sock = new MockSocket
+        c.start sock
+
+        c.onUpdate {type: 'update', data: game.state}
+        expect(c.serverUpdates.length).to.be 1
+        c.onUpdate {type: 'update', data: game.state}
+        expect(c.serverUpdates.length).to.be 2
+        c.onUpdate {type: 'update', data: game.state}
+        expect(c.serverUpdates.length).to.be 3
+        oldUpdateCount = Client.SERVERUPDATES
+        Client.SERVERUPDATES = 3
+        c.onUpdate {type: 'update', data: game.state}
+        expect(c.serverUpdates.length).to.be 3
+        Client.SERVERUPDATES = oldUpdateCount
+
+      it 'should do linear interpolation', ->
+        canvas = new MockCanvas conf.board.size.x, conf.board.size.y
+        game = new window.WebPongJSGame conf
+        c = new Client conf, game, canvas
+        sock = new MockSocket
+        c.start sock
+
+        prev = game.cloneState c.game.state
+        next = game.cloneState c.game.state
+
+        now = (new Date).getTime()
+
+        prev.lastUpdate = now - conf.client.latency
+        prev.blocks.left.y = 250
+        prev.ball.x = 100
+        prev.ball.y = 200
+
+        next.lastUpdate = now + conf.client.latency
+        next.blocks.left = _.clone prev.blocks.left
+        next.blocks.left.y = 400
+        next.ball.x = 200
+        next.ball.y = 300
+
+        c.onUpdate {type: 'update', data: prev}
+        c.onUpdate {type: 'update', data: next}
+
+        c.game.state.blocks.left.y = 33
+        c.game.state.currentTime = now + 15
+
+        # Only check it doesn't throw an exception for now
+        c.magic()
+
+        expect(c.game.state.blocks.left.y).to.be 325
+        expect(c.game.state.ball.x).to.be 150
+        expect(c.game.state.ball.y).to.be 250
