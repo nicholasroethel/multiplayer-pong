@@ -25,7 +25,6 @@ class PongServer
       throw e
     @handlers =
       init: this.onInit,
-      update: this.onUpdate,
       input: this.onInput
     @updaterId = null
     @availableBlockIds = [0, 1]
@@ -82,9 +81,6 @@ class PongServer
       @game.start()
     else
       console.log "Waiting for #{PongServer.NEEDED_PLAYERS - this.playerCount()} more players"
-
-  onUpdate: (conn, data) =>
-    throw "Deprecated"
 
   onInput: (conn, data) =>
     @game.addInputUpdate @players[conn.id].block, data
