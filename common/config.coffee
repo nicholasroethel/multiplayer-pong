@@ -7,6 +7,7 @@ exports.WebPongJSConfig =
     prefix: '/pong',
   client:
     interpLatency: 100, # interpolation latency interval
+    timerAccuracy: 5,
   update:
     # milliseconds
     interval: 20,   # Game update intervals, ms.

@@ -16,11 +16,12 @@ class Game
     @currentTime = (new Date()).getTime()
 
   initialState: ->
+    # Blocks are initially vertically centered, ball is at top right corner
     centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
     ball: new Ball(@conf.ball.radius + 1, @conf.ball.radius + 1, @conf.ball.radius,
-      @conf.ball.xVelocity, @conf.ball.yVelocity),
-    blocks: [(new Block 0, centerY, @conf.block.size.x, @conf.block.size.y),
-      (new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y)],
+      @conf.ball.xVelocity, @conf.ball.yVelocity)
+    blocks: [(new Block 0, centerY, @conf.block.size.x, @conf.block.size.y)
+      (new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y)]
     lastUpdate: null
 
   cloneState: (other) ->
@@ -35,7 +36,7 @@ class Game
     @state.lastUpdate = (new Date).getTime() - drift
     gameUpdate = =>
       this.play drift
-    @playIntervalId = setInterval gameUpdate, 5 # Every 5 ms.
+    @playIntervalId = setInterval gameUpdate, @conf.client.timerAccuracy
 
   stop: ->
     console.log 'stop'
