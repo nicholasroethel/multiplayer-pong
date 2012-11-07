@@ -19,8 +19,7 @@ exports.WebPongJSConfig =
   block:
     size:
       x: 8, y: 100
-    left: color: 'blue'
-    right: color: 'red'
+    colors: ['blue', 'red']
     velocity: 0.1
   ball:
     radius: 8

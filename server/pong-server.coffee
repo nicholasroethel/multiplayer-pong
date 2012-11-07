@@ -28,7 +28,7 @@ class PongServer
       update: this.onUpdate,
       input: this.onInput
     @updaterId = null
-    @availableBlocks = ['left', 'right']
+    @availableBlockIds = [0, 1]
     @lastBroadcast = (new Date).getTime()
 
   listen: ->
@@ -116,12 +116,12 @@ class PongServer
   addPlayer: (conn) ->
     @players[conn.id] =
       connection: conn
-      block: @availableBlocks.pop()
+      block: @availableBlockIds.pop()
       inputUpdates: []
       inputIndex: -1
 
   removePlayer: (conn) ->
-    @availableBlocks.push @players[conn.id].block
+    @availableBlockIds.push @players[conn.id].block
     delete @players[conn.id]
 
   playerCount: ->
