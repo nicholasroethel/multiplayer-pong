@@ -13,10 +13,19 @@ class Game
     ball: new Ball(@conf.ball.radius + 1, @conf.ball.radius + 1, @conf.ball.radius,
       @conf.ball.xVelocity, @conf.ball.yVelocity)
     blocks:
-      height: 20
       left: new Block 0, centerY, @conf.block.size.x, @conf.block.size.y
       right: new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y
     lastUpdate: null
+
+  cloneState: (other) ->
+    ball: new Ball(other.ball.x, other.ball.y, other.ball.radius,
+      other.ball.xVelocity, other.ball.yVelocity)
+    blocks:
+      left: new Block(other.blocks.left.x, other.blocks.left.y,
+        other.blocks.width, other.blocks.height)
+      right: new Block(other.blocks.right.x, other.blocks.right.y,
+        other.blocks.width, other.blocks.height)
+    lastUpdate: other.lastUpdate
 
   start: (drift) ->
     drift = drift ? 0
@@ -57,19 +66,18 @@ class Game
 
   # Calculates the game state using linear interpolation given known previous
   # and next states.
-  lerp: (t, prev, next) ->
+  lerp: (prev, next, t) ->
     # XXX: replace @conf.update.interval with actual time passed since last
     # update
-    @state = this.statelerp @conf.update.interval, @state, (statelerp prev, next, t)
+    @state = this.statelerp @state, (this.statelerp prev, next, t), @conf.update.interval
 
   getBlocks: ->
     [@state.blocks.left, @state.blocks.right]
 
-  statelerp: (t, prev, next) ->
+  statelerp: (prev, next, t) ->
     lerp = (p, n) ->
       p + (Math.max(0, Math.min(1, t))) * (n - p)
-
-    newState = _.clone prev
+    newState = this.cloneState prev
     for b in ['left', 'right']
       newState.blocks[b].y = lerp prev.blocks[b].y, next.blocks[b].y
     for axis in ['x', 'y']

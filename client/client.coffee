@@ -68,7 +68,7 @@ class Client
     @serverUpdates.push msg.data
     # Delete old updates which we should not be needing
     if @serverUpdates.length > Client.SERVERUPDATES
-      @serverUpdates = @serverUpdates.splice(0, 1)
+      @serverUpdates.splice(0, 1)
 
   onDrop: (msg) =>
     @game.stop()
@@ -132,15 +132,15 @@ class Client
       # No updates from the server yet
       return
 
-    now = (_.last @serverUpdates) - @conf.client.latency
+    now = (_.last @serverUpdates).lastUpdate - @conf.client.latency
 
     # By default use the first update
     prev = next = @serverUpdates[0]
 
     # Find our
     if updateCount >= 2
-      i = _.find [1..updateCount-1], ->
-        @serverUpdates[i-1] <= now <= @serverUpdates[i]
+      i = _.find [1..updateCount-1], (i) =>
+        @serverUpdates[i-1].lastUpdate <= now <= @serverUpdates[i].lastUpdate
       if i?
         prev = @serverUpdates[i-1]
         next = @serverUpdates[i]
@@ -150,7 +150,7 @@ class Client
 
     # Magic!
     # No, seriously. This does interpolation of the 2 server positions we're between
-    @game.lerp t, prev
+    @game.lerp prev, next, t
 
   processInput: ->
     inputs = []
