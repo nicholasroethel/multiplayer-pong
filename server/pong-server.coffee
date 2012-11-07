@@ -29,6 +29,7 @@ class PongServer
       input: this.onInput
     @updaterId = null
     @availableBlocks = ['left', 'right']
+    @lastBroadcast = (new Date).getTime()
 
   listen: ->
     @sockServer.installHandlers @httpServer,
@@ -104,6 +105,7 @@ class PongServer
       this.send p.connection, type, msg
 
   broadcastState: =>
+    @lastBroadcast = (new Date).getTime()
     console.log "Broadcasting state"
     for cid, p of @players
       this.send p.connection, 'update',
