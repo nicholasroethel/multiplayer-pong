@@ -4,7 +4,6 @@ _ = require 'underscore'
 
 pongGame = require '../common/game'
 config = require '../common/config'
-utils = require '../common/utils'
 message = require '../common/message'
 
 PongGame = pongGame.WebPongJSServerGame
