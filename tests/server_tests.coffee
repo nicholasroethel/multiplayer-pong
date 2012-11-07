@@ -3,7 +3,6 @@ should = require('should')
 config = require('../common/config').WebPongJSConfig
 game = require('../common/game')
 server = require('../server/pong-server')
-utils = require('../common/utils')
 message = require('../common/message')
 
 Ball = game.WebPongJSBall

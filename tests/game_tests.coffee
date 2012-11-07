@@ -2,7 +2,6 @@ _ = require('underscore')
 should = require('should')
 game = require('../common/game')
 config = require('../common/config').WebPongJSConfig
-utils = require('../common/utils')
 
 Ball = game.WebPongJSBall
 Block = game.WebPongJSBlock
