@@ -165,7 +165,7 @@ describe 'Block', ->
 
   it 'should calculate its borders', ->
     block = new Block 0, 1, 10, 20
-    block.borderUp().should.equal 1
-    block.borderDown().should.equal 21
-    block.borderLeft().should.equal 0
-    block.borderRight().should.equal 10
+    block.top().should.equal 1
+    block.bottom().should.equal 21
+    block.left().should.equal 0
+    block.right().should.equal 10
