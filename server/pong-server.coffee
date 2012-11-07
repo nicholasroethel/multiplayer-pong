@@ -26,8 +26,7 @@ class PongServer
     @handlers =
       init: this.onInit,
       update: this.onUpdate,
-      moveUp: this.onMoveUp,
-      moveDown: this.onMoveDown
+      input: this.onInput
     @updaterId = null
     @availableBlocks = ['left', 'right']
 
@@ -85,15 +84,18 @@ class PongServer
 
   onUpdate: (conn, data) =>
     console.log "Sending on-demand update to #{conn.id}"
-    this.send conn 'update', @game.state
+    this.processInputs()
+    this.send conn 'update',
+      state: @game.state
 
-  onMoveUp: (conn, data) =>
-    @game.state.blocks[@players[conn.id].block].movingUp = data == 'start'
-    this.broadcast 'update', @game.state
+  processInputs: ->
+    for cid, p of @players
+      block = @game.state.blocks[p.block]
+      @game.processInputs block, p.inputUpdates, p.inputIndex
+      p.inputIndex = (_.last p.inputUpdates).index
 
-  onMoveDown: (conn, data) =>
-    @game.state.blocks[@players[conn.id].block].movingDown = data == 'start'
-    this.broadcast 'update', @game.state
+  onInput: (conn, data) =>
+    @players[conn.id].inputUpdates.push data
 
   # Connection helper methods
   send: (conn, msgType, msgData) =>
@@ -118,7 +120,9 @@ class PongServer
   addPlayer: (conn) ->
     @players[conn.id] =
       connection: conn,
-      block: @availableBlocks.pop()
+      block: @availableBlocks.pop(),
+      inputUpdates: [],
+      inputIndex: -1,
 
   removePlayer: (conn) ->
     @availableBlocks.push @players[conn.id].block
@@ -137,11 +141,11 @@ class PongServer
       clearInterval @updaterId
       @updaterId = null
 
+exports.PongServer = PongServer
+
 main = ->
   console.log 'Starting Pong Server'
   pongServer = new PongServer
   pongServer.listen()
-
-exports.WebPongJSServer = PongServer
 
 main() if require.main is module

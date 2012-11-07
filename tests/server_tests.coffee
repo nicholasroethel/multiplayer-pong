@@ -9,7 +9,7 @@ message = require('../common/message')
 Ball = game.WebPongJSBall
 Block = game.WebPongJSBlock
 Game = game.WebPongJSGame
-Server = server.WebPongJSServer
+Server = server.PongServer
 Message = message.WebPongJSMessage
 
 class MockConnection
@@ -91,6 +91,7 @@ describe 'Server', ->
     (conn.callbacks['data']?).should.equal true
 
     s.playerCount().should.equal 1
+    s.players[conn.id].inputIndex.should.equal -1
 
   it 'should handle closing of connections', ->
     s = new Server
@@ -122,3 +123,22 @@ describe 'Server', ->
     console.log resp.type
     resp.type.should.equal 'init'
     resp.data.block.should.equal 'right'
+
+  it 'should save input buffers', ->
+    s = new Server
+    sockServer = new MockSockJsServer
+    httpServer = new MockHttpServer
+    s.sockServer = sockServer
+    s.httpServer = httpServer
+    s.listen()
+    
+    conn = new MockConnection 'conn1'
+    sockServer.callbacks['connection'](conn)
+
+    conn.testSendToServer 'input', {buffer: ['up', 'up'], index: 0}
+    conn.testSendToServer 'input', {buffer: ['up', 'down'], index: 1}
+    (s.players[conn.id].inputUpdates.length).should.equal 2
+
+    s.processInputs()
+    s.game.state.blocks.right.movingUp.should.equal 3
+    s.game.state.blocks.right.movingDown.should.equal 1
