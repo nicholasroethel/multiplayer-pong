@@ -39,7 +39,7 @@ class Game
     @state.lastUpdate = (new Date).getTime() - drift
     gameUpdate = =>
       this.play drift
-    @playIntervalId = setInterval gameUpdate, 1 # Every ms.
+    @playIntervalId = setInterval gameUpdate, 5 # Every 5 ms.
 
   stop: ->
     console.log 'stop'
@@ -222,7 +222,6 @@ class ServerGame extends Game
     if timeDelta >= @conf.update.interval
       # Apply all the client input from the buffer
       this.processInputs()
-
       @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
       @state.lastUpdate = currentTime
       this.publish 'update', @state
@@ -253,7 +252,7 @@ class ServerGame extends Game
 
 class ClientGame extends Game
 
-  @SERVERUPDATES: 100
+  @SERVERUPDATES: 5000
 
   constructor: (conf) ->
     super conf
@@ -266,7 +265,7 @@ class ClientGame extends Game
   play: (drift) ->
     # Compute the game state in the past, as specified by @conf.client.latency,
     # so we can interpolate between the two server updates `now` falls between.
-    currentTime = (new Date).getTime() - drift - @conf.client.latency
+    currentTime = (new Date).getTime() - drift - @conf.client.interpLatency
     timeDelta = currentTime - @state.lastUpdate
 
     # Time to update
@@ -276,10 +275,7 @@ class ClientGame extends Game
       # Client-side prediction
       this.inputPredict()
       @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
-
-      # Use the buffered
-      #this.interpolateState currentTime
-
+      this.interpolateState currentTime
       @state.lastUpdate = currentTime
       this.publish 'update', @state
 
@@ -309,13 +305,6 @@ class ClientGame extends Game
   interpolateState: (now) ->
     updateCount = @serverUpdates.length
 
-    if updateCount == 0
-      # No updates from the server yet
-      return
-
-    # By default use the first update
-    prev = next = @serverUpdates[0]
-
     if updateCount >= 2
       # Find the 2 updates `now` falls between.
       i = _.find [1..updateCount-1], (i) =>
@@ -323,15 +312,38 @@ class ClientGame extends Game
       if i?
         prev = @serverUpdates[i-1]
         next = @serverUpdates[i]
+      else
+        console.log 'Cannot interpolate', @serverUpdates.length
+        return
 
-    # Compute the fraction used for interpolation. This is a number between 0
-    # and 1 that represents the fraction of time passed (at the current moment, `now`)
-    # between the two neighbouring updates.
-    t1 = (next.state.lastUpdate - now) / (next.state.lastUpdate - prev.state.lastUpdate + 0.01)
-    t2 = (now - prev.state.lastUpdate) / (next.state.lastUpdate - prev.state.lastUpdate + 0.01)
+      # Compute the fraction used for interpolation. This is a number between 0
+      # and 1 that represents the fraction of time passed (at the current moment, `now`)
+      # between the two neighbouring updates.
+      t1 = (next.state.lastUpdate - now) / (next.state.lastUpdate - prev.state.lastUpdate + 0.01)
+      t2 = (0.00025 * (now-@state.lastUpdate)).toFixed(3)
+      console.log t2
 
-    # Compute next game state using interpolation
-    this.lerp prev.state, next.state, t1, t2
+      # Compute next game state using interpolation
+      @state = this.lerp prev.state, next.state, t1, t2
+
+  # Calculates the game state using linear interpolation given known previous
+  # and next states.
+  lerp: (prev, next, t1, t2) ->
+    this.statelerp @state, (this.statelerp prev, next, t1), t2
+
+  statelerp: (prev, next, t) ->
+    lerp = (p, n) ->
+      res = p + (Math.max(0, Math.min(1, t))) * (n - p)
+
+    newState = this.cloneState prev
+
+    for axis in ['x', 'y']
+      newState.ball[axis] = lerp prev.ball[axis], next.ball[axis], t
+
+    for blockName in ['left', 'right']
+      if blockName != @blockName
+        newState.blocks[blockName].y = lerp prev.blocks[blockName].y, next.blocks[blockName].y, t
+    newState
 
   sampleInput: (timeDelta) ->
     # Sample the user input, package it up and send it to the server
@@ -351,29 +363,6 @@ class ClientGame extends Game
       @inputsBuffer.push inputEntry
       this.publish 'input', inputEntry
 
-  # Calculates the game state using linear interpolation given known previous
-  # and next states.
-  lerp: (prev, next, t1, t2) ->
-    # XXX: replace @conf.update.interval with actual time passed since last
-    # update
-    @state = this.statelerp @state, (this.statelerp prev, next, t1), t2
-    console.log @state.ball.x, @state.ball.y
-
-  statelerp: (prev, next, t) ->
-    lerp = (p, n) ->
-      res = p + (Math.max(0, Math.min(1, t))) * (n - p)
-
-    newState = this.cloneState prev
-
-    # Interpolate
-    for axis in ['x', 'y']
-      newState.ball[axis] = lerp prev.ball[axis], next.ball[axis]
-
-    for blockName in ['left', 'right']
-      if blockName != @blockName
-        newState.blocks[blockName].y = lerp prev.blocks[blockName].y, next.blocks[blockName].y, t
-
-    newState
 
   addServerUpdate: (update) ->
     # Buffer up an update that the server has sent us
