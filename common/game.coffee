@@ -274,68 +274,13 @@ class Ball
     @yVelocity = data.yVelocity
     @radius = data.radius
 
-  # Bounce this ball off a block if needed
-  blockPong: (block) ->
-    bounce = x: false, y: false
+  # Free movement of the ball
+  move: (t) ->
+    @x += @xVelocity * t
+    @y += @yVelocity * t
 
-    # Block borders
-    left = block.left()
-    right = block.right()
-    up = block.top()
-    down = block.bottom()
-
-    xWithin = block.left() <= this.right() <= block.right() or
-      block.left() <= this.left() <= block.right() or
-      this.left() <= block.left() <= block.right() <= this.right()
-
-    yWithin = block.top() <= this.bottom() <= block.bottom() or
-      block.top() <= this.top() <= block.bottom() or
-      this.top() <= block.top() <= block.bottom() <= this.bottom()
-
-    if yWithin
-      if @xVelocity > 0
-        # Moving right, check left border
-        if Math.abs(@x-left) <= @radius
-          bounce.x = true
-      else
-        if Math.abs(@x-right) <= @radius
-          bounce.x = true
-
-    if xWithin
-      if @yVelocity > 0
-        # Moving down, check up border
-        if Math.abs(@y-up) <= @radius
-          bounce.y = true
-      else
-        # Moving up, check down border
-        if Math.abs(@y-down) <= @radius
-          bounce.y = true
-
-    return bounce
-
-  horizontalWallCollision: (maxY) ->
-    this.top() <= 0 or this.bottom() >= maxY
-
-  verticalWallCollision: (maxX) ->
-    this.left() <= 0 or this.right() >= maxX
-
-  verticalPong: ->
-    @yVelocity = -@yVelocity
-
-  horizontalPong: ->
-    @xVelocity = -@xVelocity
-
-  left: ->
-    @x - @radius
-
-  right: ->
-    @x + @radius
-
-  top: ->
-    @y - @radius
-
-  bottom: ->
-    @y + @radius
+  moveBack: (t) ->
+    this.move -t
 
   # Collision-aware movement of the ball
   pongMove: (timeDelta, blocks, boardX, boardY) ->
@@ -362,13 +307,60 @@ class Ball
       this.horizontalPong()
       this.move timeDelta
 
-  # Free movement of the ball
-  move: (t) ->
-    @x += @xVelocity * t
-    @y += @yVelocity * t
+  # Collision detect and bounce this ball off a block if needed Note that this
+  # doesn't work in the general case. For example, in theory if the block is
+  # moving too fast the ball could get "stuck inside it".  But it works well
+  # enough for our purposes.
+  blockPong: (block) ->
+    bounce = x: false, y: false
 
-  moveBack: (t) ->
-    this.move -t
+    # Wheter ball and block are horizontally aligned
+    xWithin = block.left() <= this.right() <= block.right() or
+      block.left() <= this.left() <= block.right() or
+      this.left() <= block.left() <= block.right() <= this.right()
+
+    # Wheter ball and block are vertically aligned
+    yWithin = block.top() <= this.bottom() <= block.bottom() or
+      block.top() <= this.top() <= block.bottom() or
+      this.top() <= block.top() <= block.bottom() <= this.bottom()
+
+    # Ball moves left-to-right and hits the block's left wall
+    # or ball move right-to-left and hits the block's right wall
+    bounce.x = yWithin and
+      ((@xVelocity > 0 and Math.abs(@x-block.left()) <= @radius) or
+    Math.abs(@x-block.right()) <= @radius)
+
+    # Ball moves downwards and hits the block's top wall
+    # or ball moves upwards and hits the block's bottom wall
+    bounce.y = xWithin and
+      ((@yVelocity > 0 and if Math.abs(@y-block.top()) <= @radius) or
+      Math.abs(@y-block.bottom()) <= @radius)
+
+    return bounce
+
+  horizontalWallCollision: (maxY) ->
+    this.top() <= 0 or this.bottom() >= maxY
+
+  verticalWallCollision: (maxX) ->
+    this.left() <= 0 or this.right() >= maxX
+
+  verticalPong: ->
+    @yVelocity = -@yVelocity
+
+  horizontalPong: ->
+    @xVelocity = -@xVelocity
+
+  left: ->
+    @x - @radius
+
+  right: ->
+    @x + @radius
+
+  top: ->
+    @y - @radius
+
+  bottom: ->
+    @y + @radius
 
 
 exports.WebPongJSServerGame = ServerGame
