@@ -137,8 +137,9 @@ describe 'Server', ->
 
     conn.testSendToServer 'input', {buffer: ['up', 'up'], index: 0}
     conn.testSendToServer 'input', {buffer: ['up', 'down'], index: 1}
-    (s.players[conn.id].inputUpdates.length).should.equal 2
+    s.players[conn.id].inputUpdates.length.should.equal 2
 
     s.processInputs()
     s.game.state.blocks.right.movingUp.should.equal 3
     s.game.state.blocks.right.movingDown.should.equal 1
+    s.players[conn.id].inputIndex.should.equal 1
