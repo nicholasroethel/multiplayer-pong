@@ -236,7 +236,6 @@ class ServerGame extends Game
               block.moveDown input.duration, @conf.board.size.y
             else if cmd == 'up'
               block.moveUp input.duration
-            console.log block.y
 
         # We just processed these, so clear the buffer,
         # and move the index
@@ -252,7 +251,7 @@ class ServerGame extends Game
 
 class ClientGame extends Game
 
-  @SERVERUPDATES: 5000
+  @SERVERUPDATES: 500
 
   constructor: (conf) ->
     super conf
@@ -288,10 +287,10 @@ class ClientGame extends Game
     #
     # More info at:
     # https://developer.valvesoftware.com/wiki/Latency_Compensating_Methods_in_Client/Server_In-game_Protocol_Design_and_Optimization#Client_Side_Prediction
-    lastUpdate = _.last @serverUpdates
-    if lastUpdate?
+
+    if @serverUpdates.length > 0
       # Start from last known position
-      @controlledBlock.y = lastUpdate.state.blocks[@blockName].y
+      @controlledBlock.y = (_.last @serverUpdates).state.blocks[@blockName].y
 
     # "Replay" all user input that is not yet acknowledged by the server
     for input in @inputsBuffer
@@ -304,46 +303,38 @@ class ClientGame extends Game
 
   interpolateState: (now) ->
     updateCount = @serverUpdates.length
+    if updateCount < 2
+      return
 
-    if updateCount >= 2
-      # Find the 2 updates `now` falls between.
-      i = _.find [1..updateCount-1], (i) =>
-        @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
-      if i?
-        prev = @serverUpdates[i-1]
-        next = @serverUpdates[i]
-      else
-        console.log 'Cannot interpolate', @serverUpdates.length
-        return
+    # Find the 2 updates `now` falls between.
+    i = _.find [1..updateCount-1], (i) =>
+      @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
 
-      # Compute the fraction used for interpolation. This is a number between 0
-      # and 1 that represents the fraction of time passed (at the current moment, `now`)
-      # between the two neighbouring updates.
-      t1 = (next.state.lastUpdate - now) / (next.state.lastUpdate - prev.state.lastUpdate + 0.01)
-      t2 = (0.00025 * (now-@state.lastUpdate)).toFixed(3)
-      console.log t2
+    if not i?
+      console.log 'Could not interpolate'
+      return
 
-      # Compute next game state using interpolation
-      @state = this.lerp prev.state, next.state, t1, t2
+    prev = @serverUpdates[i-1].state
+    next = @serverUpdates[i].state
 
-  # Calculates the game state using linear interpolation given known previous
-  # and next states.
-  lerp: (prev, next, t1, t2) ->
-    this.statelerp @state, (this.statelerp prev, next, t1), t2
+    # Linearly interpolate the position of the ball in an attempt to smooth
+    # movement for the clients
+    lerp = (p, n, t) ->
+      p + (n - p) * Math.max(Math.min(t, 1), 0)
 
-  statelerp: (prev, next, t) ->
-    lerp = (p, n) ->
-      res = p + (Math.max(0, Math.min(1, t))) * (n - p)
+    # Compute the fraction used for interpolation. This is a number between 0
+    # and 1 that represents the fraction of time passed (at the current moment, `now`)
+    # between the two neighbouring updates.
+    t = (now - prev.lastUpdate) / (next.lastUpdate - prev.lastUpdate)
 
-    newState = this.cloneState prev
+    @state.ball.x = lerp prev.ball.x, next.ball.x, t
+    @state.ball.y = lerp prev.ball.y, next.ball.y, t
 
-    for axis in ['x', 'y']
-      newState.ball[axis] = lerp prev.ball[axis], next.ball[axis], t
-
-    for blockName in ['left', 'right']
-      if blockName != @blockName
-        newState.blocks[blockName].y = lerp prev.blocks[blockName].y, next.blocks[blockName].y, t
-    newState
+    # Interpolate the block that we are not controlling
+    if @blockName == 'left'
+      @state.blocks.right.y = lerp prev.blocks.right.y, next.blocks.right.y, t
+    else
+      @state.blocks.left.y = lerp prev.blocks.left.y, next.blocks.left.y, t
 
   sampleInput: (timeDelta) ->
     # Sample the user input, package it up and send it to the server
@@ -362,7 +353,6 @@ class ClientGame extends Game
       console.log "Sending update to server", inputEntry
       @inputsBuffer.push inputEntry
       this.publish 'input', inputEntry
-
 
   addServerUpdate: (update) ->
     # Buffer up an update that the server has sent us
