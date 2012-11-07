@@ -284,11 +284,13 @@ class Ball
     up = block.top()
     down = block.bottom()
 
-    xWithin = block.left() <= @x + @radius <= block.right() or
-      block.left() <= @x - @radius <= block.right()
+    xWithin = block.left() <= this.right() <= block.right() or
+      block.left() <= this.left() <= block.right() or
+      this.left() <= block.left() <= block.right() <= this.right()
 
-    yWithin = block.top() <= @y + @radius <= block.bottom() or
-      block.top() <= @y - @radius <= block.bottom()
+    yWithin = block.top() <= this.bottom() <= block.bottom() or
+      block.top() <= this.top() <= block.bottom() or
+      this.top() <= block.top() <= block.bottom() <= this.bottom()
 
     if yWithin
       if @xVelocity > 0
@@ -312,10 +314,10 @@ class Ball
     return bounce
 
   horizontalWallCollision: (maxY) ->
-    @y - @radius <= 0 or @y + @radius >= maxY
+    this.top() <= 0 or this.bottom() >= maxY
 
   verticalWallCollision: (maxX) ->
-    @x - @radius <= 0 or @x + @radius >= maxX
+    this.left() <= 0 or this.right() >= maxX
 
   verticalPong: ->
     @yVelocity = -@yVelocity
