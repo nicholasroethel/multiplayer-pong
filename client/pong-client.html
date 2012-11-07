@@ -17,10 +17,10 @@
 
     <script type="text/coffeescript">
       Client = window.WebPongJSClient
-      Game = window.WebPongJSGame
+      Game = window.WebPongJSClientGame
 
       conf = window.WebPongJSConfig
-      game = new window.WebPongJSGame conf
+      game = new Game conf
 
       client = new Client conf, game, document.getElementById conf.board.id
       client.start()

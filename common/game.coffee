@@ -1,6 +1,13 @@
 exports = exports ? this
 
+if require?
+  _ = require 'underscore'
+else
+  _ = window._
+
 class Game
+  # An abstract base class representing a game.
+  # See subclasses for client/server differences
 
   constructor: (@conf) ->
     @state = this.initialState()
@@ -42,20 +49,7 @@ class Game
     # this.publish 'update', @state
 
   play: (drift) ->
-    currentTime = (new Date()).getTime() - drift
-    timeDelta = currentTime - @state.lastUpdate
-    if timeDelta >= @conf.update.interval
-      for block in this.getBlocks()
-        # XXX: This, of course, is stupid.
-        # Should instead have a "move" property with a numerical value (<0 for
-        # moving up, >0 for moving down)
-        for i in [0...block.movingUp]
-          block.moveUp()
-        for i in [0...block.movingDown]
-          block.moveDown()
-      @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
-      @state.lastUpdate = currentTime
-      this.publish 'update', @state
+    throw "play is not implemented in abstract base class Game"
 
   update: (state) ->
     @state.lastUpdate = state.lastUpdate
@@ -64,26 +58,8 @@ class Game
     @state.blocks.right.update state.blocks.right
     this.publish 'update', @state
 
-  # Calculates the game state using linear interpolation given known previous
-  # and next states.
-  lerp: (prev, next, t) ->
-    # XXX: replace @conf.update.interval with actual time passed since last
-    # update
-    @state = this.statelerp @state, (this.statelerp prev, next, t), (new Date).getTime() - @state.lastUpdate - @initialDrift
-    console.log @state.lastUpdate
-
   getBlocks: ->
     [@state.blocks.left, @state.blocks.right]
-
-  statelerp: (prev, next, t) ->
-    lerp = (p, n) ->
-      res = p + (Math.max(0, Math.min(1, t))) * (n - p)
-    newState = this.cloneState prev
-    for b in ['left', 'right']
-      newState.blocks[b].y = lerp prev.blocks[b].y, next.blocks[b].y
-    for axis in ['x', 'y']
-      newState.ball[axis] = lerp prev.ball[axis], next.ball[axis]
-    newState
 
   on: (event, callback) ->
     if not (event of @callbacks)
@@ -95,15 +71,6 @@ class Game
       for callback in @callbacks[event]
         callback(event, data)
 
-  processInputs: (block, inputUpdates, inputIndex) ->
-    block.movingUp = block.movingDown = 0
-    for input in inputUpdates
-      if input.index > inputIndex
-        for m in input.buffer
-          if m == 'up'
-            block.movingUp += 1
-          else if m == 'down'
-            block.movingDown += 1
 
 class Block
 
@@ -129,11 +96,11 @@ class Block
   borderRight: ->
     @x + @width
 
-  moveUp: ->
-    @y = Math.max(@y - 10, 0)
+  moveUp: (t) ->
+    @y = Math.max(@y - t*0.5, 0)
 
-  moveDown: (maxY) ->
-    @y = Math.min(@y + 10, maxY - @height)
+  moveDown: (t, maxY) ->
+    @y = Math.min(@y + t*0.5, maxY - @height)
 
 class Ball
 
@@ -240,6 +207,192 @@ class Ball
   moveBack: (t) ->
     this.move -t
 
-exports.WebPongJSGame = Game
+class ServerGame extends Game
+
+  constructor: (conf) ->
+    super conf
+    @inputUpdates = []
+
+  play: (drift) ->
+    # The server just loops through the game
+    # Executing user commands if necessary
+    currentTime = (new Date()).getTime()
+    timeDelta = currentTime - @state.lastUpdate
+
+    if timeDelta >= @conf.update.interval
+      # Apply all the client input from the buffer
+      this.processInputs()
+
+      @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
+      @state.lastUpdate = currentTime
+      this.publish 'update', @state
+
+  processInputs: ->
+    for blockName, updateEntry of @inputUpdates
+      if updateEntry.updates.length > 0
+        block = @state.blocks[blockName]
+        for input in updateEntry.updates
+          for cmd in input.buffer
+            if cmd == 'down'
+              block.moveDown input.duration, @conf.board.size.y
+            else if cmd == 'up'
+              block.moveUp input.duration
+            console.log block.y
+
+        # We just processed these, so clear the buffer,
+        # and move the index
+        updateEntry.inputIndex = (_.last updateEntry.updates).index
+        updateEntry.updates = []
+        console.log "Done. new index is #{updateEntry.inputIndex}"
+
+  addInputUpdate: (blockName, data) ->
+    # Adds an input update that affects `block`.
+    # The input will be processed in the next game update loop.
+    @inputUpdates[blockName] = @inputUpdates[blockName] ? { updates: [], inputIndex: -1 }
+    @inputUpdates[blockName].updates.push data
+
+class ClientGame extends Game
+
+  @SERVERUPDATES: 100
+
+  constructor: (conf) ->
+    super conf
+    @blockName = null
+    @controlledBlock = null
+    @inputsBuffer = []
+    @inputIndex = 0
+    @serverUpdates = []
+
+  play: (drift) ->
+    # Compute the game state in the past, as specified by @conf.client.latency,
+    # so we can interpolate between the two server updates `now` falls between.
+    currentTime = (new Date).getTime() - drift - @conf.client.latency
+    timeDelta = currentTime - @state.lastUpdate
+
+    # Time to update
+    if timeDelta >= @conf.update.interval
+      # Get any input from the client, send to server
+      this.sampleInput timeDelta
+      # Client-side prediction
+      this.inputPredict()
+      @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
+
+      # Use the buffered
+      #this.interpolateState currentTime
+
+      @state.lastUpdate = currentTime
+      this.publish 'update', @state
+
+  inputPredict: ->
+    # Client-side input prediction:
+    #
+    # - Get latest position of our controlled block according to the server
+    # - Re-apply all inputs not yet acknowledged by the server. They are
+    # contained in `@inputsBuffer`.
+    #
+    # More info at:
+    # https://developer.valvesoftware.com/wiki/Latency_Compensating_Methods_in_Client/Server_In-game_Protocol_Design_and_Optimization#Client_Side_Prediction
+    lastUpdate = _.last @serverUpdates
+    if lastUpdate?
+      # Start from last known position
+      @controlledBlock.y = lastUpdate.state.blocks[@blockName].y
+
+    # "Replay" all user input that is not yet acknowledged by the server
+    for input in @inputsBuffer
+      for cmd in input.buffer
+        switch cmd
+          when 'up'
+            @controlledBlock.moveUp input.duration
+          when 'down'
+            @controlledBlock.moveDown input.duration, @conf.board.size.y
+
+  interpolateState: (now) ->
+    updateCount = @serverUpdates.length
+
+    if updateCount == 0
+      # No updates from the server yet
+      return
+
+    # By default use the first update
+    prev = next = @serverUpdates[0]
+
+    if updateCount >= 2
+      # Find the 2 updates `now` falls between.
+      i = _.find [1..updateCount-1], (i) =>
+        @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
+      if i?
+        prev = @serverUpdates[i-1]
+        next = @serverUpdates[i]
+
+    # Compute the fraction used for interpolation. This is a number between 0
+    # and 1 that represents the fraction of time passed (at the current moment, `now`)
+    # between the two neighbouring updates.
+    t1 = (next.state.lastUpdate - now) / (next.state.lastUpdate - prev.state.lastUpdate + 0.01)
+    t2 = (now - prev.state.lastUpdate) / (next.state.lastUpdate - prev.state.lastUpdate + 0.01)
+
+    # Compute next game state using interpolation
+    this.lerp prev.state, next.state, t1, t2
+
+  sampleInput: (timeDelta) ->
+    # Sample the user input, package it up and send it to the server
+    # The input index is a unique identifier of the input sample.
+    inputs = []
+    if @controlledBlock.movingUp
+      inputs.push 'up'
+    if @controlledBlock.movingDown
+      inputs.push 'down'
+    if inputs.length > 0
+      @inputIndex += 1
+      inputEntry =
+        buffer: inputs
+        index: @inputIndex
+        duration: timeDelta
+      console.log "Sending update to server", inputEntry
+      @inputsBuffer.push inputEntry
+      this.publish 'input', inputEntry
+
+  # Calculates the game state using linear interpolation given known previous
+  # and next states.
+  lerp: (prev, next, t1, t2) ->
+    # XXX: replace @conf.update.interval with actual time passed since last
+    # update
+    @state = this.statelerp @state, (this.statelerp prev, next, t1), t2
+    console.log @state.ball.x, @state.ball.y
+
+  statelerp: (prev, next, t) ->
+    lerp = (p, n) ->
+      res = p + (Math.max(0, Math.min(1, t))) * (n - p)
+
+    newState = this.cloneState prev
+
+    # Interpolate
+    for axis in ['x', 'y']
+      newState.ball[axis] = lerp prev.ball[axis], next.ball[axis]
+
+    for blockName in ['left', 'right']
+      if blockName != @blockName
+        newState.blocks[blockName].y = lerp prev.blocks[blockName].y, next.blocks[blockName].y, t
+
+    newState
+
+  addServerUpdate: (update) ->
+    # Buffer up an update that the server has sent us
+    @serverUpdates.push update
+
+    # Keep only the last `ClientGame.SERVERUPDATES` server updates
+    if @serverUpdates.length > ClientGame.SERVERUPDATES
+      @serverUpdates.splice(0, 1)
+
+    # Forget about updates that the server has acknowledged
+    this.discardAcknowledgedInput update
+
+  discardAcknowledgedInput: (serverUpdate) ->
+    @inputsBuffer = (input for input in @inputsBuffer when input.index > serverUpdate.inputIndex)
+
+  setBlock: (@blockName) ->
+    @controlledBlock = @state.blocks[@blockName]
+
+exports.WebPongJSServerGame = ServerGame
+exports.WebPongJSClientGame = ClientGame
 exports.WebPongJSBall = Ball
 exports.WebPongJSBlock = Block

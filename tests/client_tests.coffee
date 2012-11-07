@@ -1,6 +1,6 @@
 if window?
   Client = window.WebPongJSClient
-  Game = window.WebPongJSGame
+  Game = window.WebPongJSClientGame
   conf = window.WebPongJSConfig
   Message = window.WebPongJSMessage
 
@@ -57,12 +57,12 @@ if window?
       expect(Game).to.be.ok()
       expect(conf).to.be.ok()
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new window.WebPongJSGame conf
+      game = new Game conf, 'left'
       c = new Client conf, game, canvas
 
     it 'should draw the left block', ->
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new window.WebPongJSGame conf
+      game = new Game conf, 'left'
       c = new Client conf, game, canvas
       c.drawLeftBlock 2
 
@@ -74,7 +74,7 @@ if window?
 
     it 'should draw the right block', ->
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new window.WebPongJSGame conf
+      game = new Game conf, 'left'
       c = new Client conf, game, canvas
       c.drawRightBlock 13
 
@@ -86,7 +86,7 @@ if window?
 
     it 'should draw the ball', ->
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new window.WebPongJSGame conf
+      game = new Game conf, 'left'
       c = new Client conf, game, canvas
       c.drawBall 3, 4
       expect(canvas.paths.length).to.be 1
@@ -99,7 +99,7 @@ if window?
 
     it 'should draw the game state', ->
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new window.WebPongJSGame conf
+      game = new Game conf, 'left'
       c = new Client conf, game, canvas
       c.drawState 'update', game.state
       expect(canvas.clearRectCalled).to.be true
@@ -111,7 +111,7 @@ if window?
     describe 'interaction with server', ->
       it 'should start connection with server', ->
         canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new window.WebPongJSGame conf
+        game = new Game conf, 'left'
         c = new Client conf, game, canvas
         sock = new MockSocket
         c.start sock
@@ -128,40 +128,40 @@ if window?
     describe 'syncrhonization', ->
       it 'should buffer server updates', ->
         canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new window.WebPongJSGame conf
+        game = new Game conf, 'left'
         c = new Client conf, game, canvas
         sock = new MockSocket
         c.start sock
 
-        c.inputsBuffer = [{buffer: ['up'], index: 1}, {buffer: ['up'], index: 2}, {buffer: ['down'], index: 3}]
+        c.game.inputsBuffer = [{buffer: ['up'], index: 1}, {buffer: ['up'], index: 2}, {buffer: ['down'], index: 3}]
         c.onInit type: 'init', data: block: 'left'
 
         c.onUpdate type: 'update', data:
           state: game.state
           inputIndex: 0
-        expect(c.inputsBuffer.length).to.be 3
-        expect(c.serverUpdates.length).to.be 1
+        expect(c.game.inputsBuffer.length).to.be 3
+        expect(c.game.serverUpdates.length).to.be 1
         c.onUpdate type: 'update', data:
           state: game.state
           inputIndex: 1
-        expect(c.inputsBuffer.length).to.be 2
-        expect(c.serverUpdates.length).to.be 2
+        expect(c.game.inputsBuffer.length).to.be 2
+        expect(c.game.serverUpdates.length).to.be 2
         c.onUpdate type: 'update', data:
           state: game.state
           inputIndex: 2
-        expect(c.serverUpdates.length).to.be 3
-        oldUpdateCount = Client.SERVERUPDATES
-        Client.SERVERUPDATES = 3
+        expect(c.game.serverUpdates.length).to.be 3
+        oldUpdateCount = Game.SERVERUPDATES
+        Game.SERVERUPDATES = 3
         c.onUpdate type: 'update', data:
           state: game.state
           inputIndex: 3
-        expect(c.serverUpdates.length).to.be 3
-        Client.SERVERUPDATES = oldUpdateCount
-        expect(c.serverUpdates.length).to.be 3
+        expect(c.game.serverUpdates.length).to.be 3
+        Game.SERVERUPDATES = oldUpdateCount
+        expect(c.game.serverUpdates.length).to.be 3
 
       it 'should do linear interpolation', ->
         canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new window.WebPongJSGame conf
+        game = new Game conf, 'left'
         c = new Client conf, game, canvas
         sock = new MockSocket
         c.start sock
@@ -189,7 +189,7 @@ if window?
         c.game.state.blocks.left.y = 33
         c.game.state.currentTime = now + 15
 
-        c.magic()
+        c.interpolateState()
         expect(c.game.state.blocks.left.y).to.be 325
         expect(c.game.state.ball.x).to.be 150
         expect(c.game.state.ball.y).to.be 250
