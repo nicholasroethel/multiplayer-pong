@@ -121,7 +121,7 @@ describe 'Server', ->
     conn.testSendToServer 'init', null
     resp = conn.testReadFromBuffer()
     resp.type.should.equal 'init'
-    resp.data.block.should.equal 'right'
+    resp.data.block.should.equal 1
 
   it 'should save input updates from clients', ->
     s = new Server

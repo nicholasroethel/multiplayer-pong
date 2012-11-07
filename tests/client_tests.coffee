@@ -4,6 +4,10 @@ if window?
   conf = window.WebPongJSConfig
   Message = window.WebPongJSMessage
 
+  class MockBlock
+    constructor: (@x, @y, @width, @height) ->
+
+
   class MockCanvas
     constructor: ->
       @paths = []
@@ -57,28 +61,16 @@ if window?
       expect(Game).to.be.ok()
       expect(conf).to.be.ok()
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf, 'left'
+      game = new Game conf
       c = new Client conf, game, canvas
 
-    it 'should draw the left block', ->
+    it 'should draw blocks', ->
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf, 'left'
+      game = new Game conf
       c = new Client conf, game, canvas
-      c.drawLeftBlock 2
+      c.drawBlocks [new MockBlock 0, 2, 3, 4]
 
-      expected=[[0, 2, conf.block.size.x, conf.block.size.y]]
-      actual = canvas.rectangles
-
-      expect(actual.length).to.be 1
-      expect((_.difference actual[0], expected[0]).length).to.be 0
-
-    it 'should draw the right block', ->
-      canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf, 'left'
-      c = new Client conf, game, canvas
-      c.drawRightBlock 13
-
-      expected=[[conf.board.size.x - conf.block.size.x, 13, conf.block.size.x, conf.block.size.y]]
+      expected=[[0, 2, 3, 4]]
       actual = canvas.rectangles
 
       expect(actual.length).to.be 1
@@ -86,7 +78,7 @@ if window?
 
     it 'should draw the ball', ->
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf, 'left'
+      game = new Game conf
       c = new Client conf, game, canvas
       c.drawBall 3, 4
       expect(canvas.paths.length).to.be 1
@@ -99,7 +91,7 @@ if window?
 
     it 'should draw the game state', ->
       canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf, 'left'
+      game = new Game conf
       c = new Client conf, game, canvas
       c.drawState 'update', game.state
       expect(canvas.clearRectCalled).to.be true
@@ -111,7 +103,7 @@ if window?
     describe 'interaction with server', ->
       it 'should start connection with server', ->
         canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new Game conf, 'left'
+        game = new Game conf
         c = new Client conf, game, canvas
         sock = new MockSocket
         c.start sock
@@ -128,7 +120,7 @@ if window?
     describe 'syncrhonization', ->
       it 'should buffer server updates', ->
         canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new Game conf, 'left'
+        game = new Game conf
         c = new Client conf, game, canvas
         sock = new MockSocket
         c.start sock
@@ -161,35 +153,37 @@ if window?
 
       it 'should do linear interpolation', ->
         canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new Game conf, 'left'
+        game = new Game conf
         c = new Client conf, game, canvas
         sock = new MockSocket
         c.start sock
-        c.onInit type: 'init', data: block: 'left'
+        c.onInit type: 'init', data: block: 0
 
-        prev = game.cloneState c.game.state
-        next = game.cloneState c.game.state
+        prev =
+          state: game.cloneState c.game.state
+        next =
+          state: game.cloneState c.game.state
 
         now = (new Date).getTime()
 
-        prev.lastUpdate = now - conf.client.latency
-        prev.blocks.left.y = 250
-        prev.ball.x = 100
-        prev.ball.y = 200
+        prev.state.lastUpdate = now - 200
+        prev.state.blocks[0].y = 250
+        prev.state.ball.x = 100
+        prev.state.ball.y = 200
 
-        next.lastUpdate = now + conf.client.latency
-        next.blocks.left = _.clone prev.blocks.left
-        next.blocks.left.y = 400
-        next.ball.x = 200
-        next.ball.y = 300
+        next.state.lastUpdate = now + 200
+        next.state.blocks[0] = _.clone prev.state.blocks[0]
+        next.state.blocks[0].y = 400
+        next.state.ball.x = 200
+        next.state.ball.y = 300
 
         c.onUpdate {type: 'update', data: prev}
         c.onUpdate {type: 'update', data: next}
 
-        c.game.state.blocks.left.y = 33
-        c.game.state.currentTime = now + 15
+        c.game.state.blocks[0].y = 325
 
-        c.interpolateState()
-        expect(c.game.state.blocks.left.y).to.be 325
+        c.game.interpolateState now
+
+        expect(c.game.state.blocks[0].y).to.be 325
         expect(c.game.state.ball.x).to.be 150
         expect(c.game.state.ball.y).to.be 250

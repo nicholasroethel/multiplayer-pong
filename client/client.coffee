@@ -88,20 +88,13 @@ class Client
       when Client.KEYS.down, Client.KEYS.j
         @controlledBlock.movingDown = 0
 
-  drawLeftBlock: (y) ->
-    @context.beginPath()
-    @context.fillStyle = @conf.block.left.color
-    @context.fillRect 0, y, @conf.block.size.x, @conf.block.size.y
-    @context.closePath()
-    @context.fill()
-
-  drawRightBlock: (y) ->
-    @context.beginPath()
-    @context.fillStyle = @conf.block.right.color
-    @context.fillRect @conf.board.size.x - @conf.block.size.x, y,
-      @conf.block.size.x, @conf.block.size.y
-    @context.closePath()
-    @context.fill()
+  drawBlocks: (blocks) ->
+    for b, i in blocks
+      @context.beginPath()
+      @context.fillStyle = @conf.block.colors[i]
+      @context.fillRect b.x, b.y, b.width, b.height
+      @context.closePath()
+      @context.fill()
 
   drawBall: (x, y) ->
     @context.beginPath()
@@ -119,8 +112,7 @@ class Client
   drawState: (ev, state) =>
     @context.clearRect 0, 0, @board.width, @board.height
     this.drawBall state.ball.x, state.ball.y
-    this.drawLeftBlock state.blocks.left.y
-    this.drawRightBlock state.blocks.right.y
+    this.drawBlocks state.blocks
 
   onGameOver: (ev, data) =>
     # Temp placeholder

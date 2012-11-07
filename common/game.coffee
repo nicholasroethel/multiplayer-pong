@@ -18,20 +18,16 @@ class Game
   initialState: ->
     centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
     ball: new Ball(@conf.ball.radius + 1, @conf.ball.radius + 1, @conf.ball.radius,
-      @conf.ball.xVelocity, @conf.ball.yVelocity)
-    blocks:
-      left: new Block 0, centerY, @conf.block.size.x, @conf.block.size.y
-      right: new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y
+      @conf.ball.xVelocity, @conf.ball.yVelocity),
+    blocks: [(new Block 0, centerY, @conf.block.size.x, @conf.block.size.y),
+      (new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y)],
     lastUpdate: null
 
   cloneState: (other) ->
     ball: new Ball(other.ball.x, other.ball.y, other.ball.radius,
       other.ball.xVelocity, other.ball.yVelocity)
     blocks:
-      left: new Block(other.blocks.left.x, other.blocks.left.y,
-        other.blocks.width, other.blocks.height)
-      right: new Block(other.blocks.right.x, other.blocks.right.y,
-        other.blocks.width, other.blocks.height)
+      [new Block(b.x, b.y, b.width, b.height) for b in other.blocks]
     lastUpdate: other.lastUpdate
 
   start: (drift) ->
@@ -54,12 +50,9 @@ class Game
   update: (state) ->
     @state.lastUpdate = state.lastUpdate
     @state.ball.update state.ball
-    @state.blocks.left.update state.blocks.left
-    @state.blocks.right.update state.blocks.right
+    for b, i in @state.blocks
+      b.update state.blocks[i]
     this.publish 'update', @state
-
-  getBlocks: ->
-    [@state.blocks.left, @state.blocks.right]
 
   on: (event, callback) ->
     if not (event of @callbacks)
@@ -70,7 +63,6 @@ class Game
     if event of @callbacks
       for callback in @callbacks[event]
         callback(event, data)
-
 
 class Block
 
@@ -174,12 +166,12 @@ class Ball
   bottom: ->
     @y + @radius
 
-  # Pong-aware movement
-  pongMove: (timeDelta, leftBlock, rightBlock, boardX, boardY) ->
+  # Collision-aware movement of the ball
+  pongMove: (timeDelta, blocks, boardX, boardY) ->
 
     this.move timeDelta
 
-    for block in [leftBlock, rightBlock]
+    for block in blocks
       bounce = this.blockPong block
       if bounce.x or bounce.y
         this.moveBack timeDelta
@@ -222,14 +214,14 @@ class ServerGame extends Game
     if timeDelta >= @conf.update.interval
       # Apply all the client input from the buffer
       this.processInputs()
-      @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
+      @state.ball.pongMove timeDelta, @state.blocks, @conf.board.size.x, @conf.board.size.y
       @state.lastUpdate = currentTime
       this.publish 'update', @state
 
   processInputs: ->
-    for blockName, updateEntry of @inputUpdates
+    for blockId, updateEntry of @inputUpdates
       if updateEntry.updates.length > 0
-        block = @state.blocks[blockName]
+        block = @state.blocks[blockId]
         for input in updateEntry.updates
           for cmd in input.buffer
             if cmd == 'down'
@@ -243,11 +235,10 @@ class ServerGame extends Game
         updateEntry.updates = []
         console.log "Done. new index is #{updateEntry.inputIndex}"
 
-  addInputUpdate: (blockName, data) ->
-    # Adds an input update that affects `block`.
+  addInputUpdate: (blockId, data) ->
     # The input will be processed in the next game update loop.
-    @inputUpdates[blockName] = @inputUpdates[blockName] ? { updates: [], inputIndex: -1 }
-    @inputUpdates[blockName].updates.push data
+    @inputUpdates[blockId] = @inputUpdates[blockId] ? { updates: [], inputIndex: -1 }
+    @inputUpdates[blockId].updates.push data
 
 class ClientGame extends Game
 
@@ -255,8 +246,7 @@ class ClientGame extends Game
 
   constructor: (conf) ->
     super conf
-    @blockName = null
-    @controlledBlock = null
+    @blockId = null
     @inputsBuffer = []
     @inputIndex = 0
     @serverUpdates = []
@@ -271,9 +261,9 @@ class ClientGame extends Game
     if timeDelta >= @conf.update.interval
       # Get any input from the client, send to server
       this.sampleInput timeDelta
-      # Client-side prediction
+      # Client-side input prediction
       this.inputPredict()
-      @state.ball.pongMove timeDelta, @state.blocks.left, @state.blocks.right, @conf.board.size.x, @conf.board.size.y
+      @state.ball.pongMove timeDelta, @state.blocks, @conf.board.size.x, @conf.board.size.y
       this.interpolateState currentTime
       @state.lastUpdate = currentTime
       this.publish 'update', @state
@@ -290,16 +280,16 @@ class ClientGame extends Game
 
     if @serverUpdates.length > 0
       # Start from last known position
-      @controlledBlock.y = (_.last @serverUpdates).state.blocks[@blockName].y
+      this.controlledBlock().y = (_.last @serverUpdates).state.blocks[@blockId].y
 
     # "Replay" all user input that is not yet acknowledged by the server
     for input in @inputsBuffer
       for cmd in input.buffer
         switch cmd
           when 'up'
-            @controlledBlock.moveUp input.duration
+            this.controlledBlock().moveUp input.duration
           when 'down'
-            @controlledBlock.moveDown input.duration, @conf.board.size.y
+            this.controlledBlock().moveDown input.duration, @conf.board.size.y
 
   interpolateState: (now) ->
     updateCount = @serverUpdates.length
@@ -331,18 +321,17 @@ class ClientGame extends Game
     @state.ball.y = lerp prev.ball.y, next.ball.y, t
 
     # Interpolate the block that we are not controlling
-    if @blockName == 'left'
-      @state.blocks.right.y = lerp prev.blocks.right.y, next.blocks.right.y, t
-    else
-      @state.blocks.left.y = lerp prev.blocks.left.y, next.blocks.left.y, t
+    for block, blockId in @state.blocks
+      if blockId != blockId
+        block.y = lerp prev.blocks[blockId].y, next.blocks[blockId].y, t
 
   sampleInput: (timeDelta) ->
     # Sample the user input, package it up and send it to the server
     # The input index is a unique identifier of the input sample.
     inputs = []
-    if @controlledBlock.movingUp
+    if this.controlledBlock().movingUp
       inputs.push 'up'
-    if @controlledBlock.movingDown
+    if this.controlledBlock().movingDown
       inputs.push 'down'
     if inputs.length > 0
       @inputIndex += 1
@@ -368,8 +357,11 @@ class ClientGame extends Game
   discardAcknowledgedInput: (serverUpdate) ->
     @inputsBuffer = (input for input in @inputsBuffer when input.index > serverUpdate.inputIndex)
 
-  setBlock: (@blockName) ->
-    @controlledBlock = @state.blocks[@blockName]
+  setBlock: (@blockId) ->
+
+  controlledBlock: ->
+    if @blockId?
+      @state.blocks[@blockId]
 
 exports.WebPongJSServerGame = ServerGame
 exports.WebPongJSClientGame = ClientGame
