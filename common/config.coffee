@@ -21,6 +21,7 @@ exports.WebPongJSConfig =
     size:
       x: 8, y: 100
     colors: ['blue', 'red']
+    names: ['left', 'right']
     velocity: 0.1
   ball:
     radius: 8
