@@ -243,7 +243,7 @@ class ClientGame extends Game
 
     # Interpolate only the block that we are not controlling
     for block, blockId in @state.blocks
-      if blockId != blockId
+      if blockId != @blockId
         block.y = lerp prev.blocks[blockId].y, next.blocks[blockId].y, t
 
   sampleInput: (timeDelta) ->
