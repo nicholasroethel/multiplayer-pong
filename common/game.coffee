@@ -20,16 +20,17 @@ class Game
     centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
     ball: new Ball(@conf.ball.radius + 1, @conf.ball.radius + 1, @conf.ball.radius,
       @conf.ball.xVelocity, @conf.ball.yVelocity)
-    blocks: [(new Block 0, centerY, @conf.block.size.x, @conf.block.size.y)
+    blocks: [(new Block 0, centerY, @conf.block.size.x, @conf.block.size.y),
       (new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y)]
     lastUpdate: null
 
   cloneState: (other) ->
-    ball: new Ball(other.ball.x, other.ball.y, other.ball.radius,
-      other.ball.xVelocity, other.ball.yVelocity)
-    blocks:
-      [new Block(b.x, b.y, b.width, b.height) for b in other.blocks]
-    lastUpdate: other.lastUpdate
+    x =
+      ball: new Ball(other.ball.x, other.ball.y, other.ball.radius,
+        other.ball.xVelocity, other.ball.yVelocity)
+      blocks:
+        b.clone() for b in other.blocks
+      lastUpdate: other.lastUpdate
 
   start: (drift) ->
     drift = drift ? 0
@@ -289,6 +290,9 @@ class Block
   constructor: (@x, @y, @width, @height) ->
     @movingUp = 0
     @movingDown = 0
+
+  clone: ->
+    new Block(@x, @y, @width, @height)
 
   update: (data) ->
     @x = data.x
