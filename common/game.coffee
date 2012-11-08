@@ -221,7 +221,7 @@ class ClientGame extends Game
     i = _.find [1..updateCount-1], (i) =>
       @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
 
-    if not i?
+    unless i?
       console.log 'Could not interpolate'
       return
 
@@ -242,9 +242,8 @@ class ClientGame extends Game
     @state.ball.y = lerp prev.ball.y, next.ball.y, t
 
     # Interpolate only the block that we are not controlling
-    for block, blockId in @state.blocks
-      if blockId != @blockId
-        block.y = lerp prev.blocks[blockId].y, next.blocks[blockId].y, t
+    for block, blockId in @state.blocks when blockId isnt @blockId
+      block.y = lerp prev.blocks[blockId].y, next.blocks[blockId].y, t
 
   sampleInput: (timeDelta) ->
     # Sample the user input, package it up and publish it.
