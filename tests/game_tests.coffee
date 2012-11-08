@@ -60,16 +60,6 @@ describe 'ServerGame', ->
     g.on 'update', myCallback
     g.start()
 
-describe 'Ball', ->
-
-  it 'should store coordinates and velocity', ->
-    ball = new Ball 0, 1, 3, 0.3, 0.4
-    ball.x.should.equal 0
-    ball.y.should.equal 1
-    ball.radius.should.equal 3
-    ball.xVelocity.should.equal 0.3
-    ball.yVelocity.should.equal 0.4
-
   describe 'should do block collision check:', ->
 
     # it 'center within', ->
@@ -82,67 +72,101 @@ describe 'Ball', ->
     it 'left wall', ->
       ball = new Ball 17, 25, 3, 1, 1
       block = new Block 20, 20, 10, 10
-      bounce = ball.blockPong(block)
+      g = new Game config
+      g.state.ball = ball
+      bounce = g.blockPong(block)
       bounce.x.should.equal true
       bounce.y.should.equal false
 
     it 'right wall', ->
       ball = new Ball 28, 25, 3, -1, 1
       block = new Block 20, 20, 10, 10
-      bounce = ball.blockPong(block)
+      g = new Game config
+      g.state.ball = ball
+      bounce = g.blockPong(block)
       bounce.x.should.equal true
       bounce.y.should.equal false
 
     it 'bottom wall', ->
       ball = new Ball 28, 33, 3, 1, -1
       block = new Block 20, 20, 10, 10
-      bounce = ball.blockPong(block)
+      g = new Game config
+      g.state.ball = ball
+      bounce = g.blockPong(block)
       bounce.x.should.equal false
       bounce.y.should.equal true
 
     it 'top wall', ->
       ball = new Ball 28, 17, 3, 1, 1
       block = new Block 20, 20, 10, 10
-      bounce = ball.blockPong(block)
+      g = new Game config
+      g.state.ball = ball
+      bounce = g.blockPong(block)
       bounce.x.should.equal false
       bounce.y.should.equal true
 
     it 'x not within', ->
       ball = new Ball 16, 33, 3, 1, -1
       block = new Block 20, 20, 10, 10
-      bounce = ball.blockPong(block)
+      g = new Game config
+      g.state.ball = ball
+      bounce = g.blockPong(block)
       bounce.x.should.equal false
       bounce.y.should.equal false
 
     it 'y not within', ->
       ball = new Ball 28, 16, 3, -1, 1
       block = new Block 20, 20, 10, 10
-      bounce = ball.blockPong(block)
+      g = new Game config
+      g.state.ball = ball
+      bounce = g.blockPong(block)
       bounce.x.should.equal false
       bounce.y.should.equal false
 
   describe 'should do horizontall wall collision check:', ->
     it 'top', ->
       ball = new Ball 0, 18, 3, 0.3, 0.4
-      ball.horizontalWallCollision(20).should.equal true
+      g = new Game config
+      g.state.ball = ball
+      g.horizontalWallCollision(20).should.equal true
     it 'bottom', ->
       ball = new Ball 0, 2, 3, 0.3, 0.4
-      ball.horizontalWallCollision(20).should.equal true
+      g = new Game config
+      g.state.ball = ball
+      g.horizontalWallCollision(20).should.equal true
     it 'no collision', ->
       ball = new Ball 0, 16.99, 3, 0.3, 0.4
-      ball.horizontalWallCollision(20).should.equal false
+      g = new Game config
+      g.state.ball = ball
+      g.horizontalWallCollision(20).should.equal false
 
   describe 'vertical wall collision check', ->
     it 'left', ->
       ball = new Ball 0, 10, 3, 0.3, 0.4
-      ball.verticalWallCollision(20).should.equal true
+      g = new Game config
+      g.state.ball = ball
+      g.verticalWallCollision(20).should.equal true
     it 'right', ->
       ball = new Ball 0, 18, 3, 0.3, 0.4
-      ball.verticalWallCollision(20).should.equal true
+      g = new Game config
+      g.state.ball = ball
+      g.verticalWallCollision(20).should.equal true
     it 'ok', ->
       ball = new Ball 3.001, 16.999, 3, 0.3, 0.4
-      ball.verticalWallCollision(20).should.equal false
+      g = new Game config
+      g.state.ball = ball
+      g.verticalWallCollision(20).should.equal false
 
+
+describe 'Ball', ->
+
+  it 'should store coordinates and velocity', ->
+    ball = new Ball 0, 1, 3, 0.3, 0.4
+    ball.x.should.equal 0
+    ball.y.should.equal 1
+    ball.radius.should.equal 3
+    ball.xVelocity.should.equal 0.3
+    ball.yVelocity.should.equal 0.4
   it 'should pong vertically', ->
     ball = new Ball 0, 10, 3, 0.3, 0.4
     ball.verticalPong()

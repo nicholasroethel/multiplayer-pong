@@ -46,6 +46,66 @@ class Game
   play: (drift) ->
     throw "play is not implemented in abstract base class Game"
 
+  # Collision-aware movement of the ball
+  pongMove: (timeDelta, blocks, boardX, boardY) ->
+    ball = @state.ball
+
+    ball.move timeDelta
+
+    for block in blocks
+      bounce = this.blockPong block
+      if bounce.x or bounce.y
+        ball.moveBack timeDelta
+        if bounce.x
+          ball.horizontalPong()
+        if bounce.y
+          ball.verticalPong()
+        ball.move timeDelta
+        return
+
+    if ball.horizontalWallCollision boardY
+      ball.moveBack timeDelta
+      ball.verticalPong()
+      ball.move timeDelta
+    else if ball.verticalWallCollision boardX
+      ball.moveBack timeDelta
+      ball.horizontalPong()
+      ball.move timeDelta
+
+  # Collision detect and bounce this ball off a block if needed Note that this
+  # doesn't work in the general case. For example, in theory if the block is
+  # moving too fast the ball could get "stuck inside it".  But it works well
+  # enough for our purposes.
+  blockPong: (block) ->
+    ball = @state.ball
+
+    # Wheter ball and block are horizontally aligned
+    xWithin = block.left() <= ball.right() <= block.right() or
+      block.left() <= ball.left() <= block.right() or
+      ball.left() <= block.left() <= block.right() <= ball.right()
+
+    # Wheter ball and block are vertically aligned
+    yWithin = block.top() <= ball.bottom() <= block.bottom() or
+      block.top() <= ball.top() <= block.bottom() or
+      ball.top() <= block.top() <= block.bottom() <= ball.bottom()
+
+    bounce  = {}
+    bounce.x = yWithin and
+      ((ball.xVelocity > 0 and Math.abs(ball.x-block.left()) <= ball.radius) or
+      (ball.xVelocity < 0 and Math.abs(ball.x-block.right()) <= ball.radius))
+
+    bounce.y = xWithin and
+      ((ball.yVelocity > 0 and Math.abs(ball.y-block.top()) <= ball.radius) or
+      (ball.yVelocity < 0 and Math.abs(ball.y-block.bottom()) <= ball.radius))
+
+    return bounce
+
+  horizontalWallCollision: (maxY) ->
+    @state.ball.top() <= 0 or @state.ball.bottom() >= maxY
+
+  verticalWallCollision: (maxX) ->
+    @state.ball.left() <= 0 or @state.ball.right() >= maxX
+
   update: (state) ->
     @state.lastUpdate = state.lastUpdate
     @state.ball.update state.ball
@@ -81,7 +141,7 @@ class ServerGame extends Game
       this.processInputs()
 
       # Run the game, and publish the update
-      @state.ball.pongMove timeDelta, @state.blocks, @conf.board.size.x, @conf.board.size.y
+      this.pongMove timeDelta, @state.blocks, @conf.board.size.x, @conf.board.size.y
       @state.lastUpdate = currentTime
       this.publish 'update', @state
 
@@ -128,7 +188,7 @@ class ClientGame extends Game
       this.sampleInput timeDelta
       # Client-side input prediction
       this.inputPredict()
-      @state.ball.pongMove timeDelta, @state.blocks, @conf.board.size.x, @conf.board.size.y
+      this.pongMove timeDelta, @state.blocks, @conf.board.size.x, @conf.board.size.y
       this.interpolateState currentTime
       @state.lastUpdate = currentTime
       this.publish 'update', @state
@@ -281,58 +341,6 @@ class Ball
 
   moveBack: (t) ->
     this.move -t
-
-  # Collision-aware movement of the ball
-  pongMove: (timeDelta, blocks, boardX, boardY) ->
-
-    this.move timeDelta
-
-    for block in blocks
-      bounce = this.blockPong block
-      if bounce.x or bounce.y
-        this.moveBack timeDelta
-        if bounce.x
-          this.horizontalPong()
-        if bounce.y
-          this.verticalPong()
-        this.move timeDelta
-        return
-
-    if this.horizontalWallCollision boardY
-      this.moveBack timeDelta
-      this.verticalPong()
-      this.move timeDelta
-    else if this.verticalWallCollision boardX
-      this.moveBack timeDelta
-      this.horizontalPong()
-      this.move timeDelta
-
-  # Collision detect and bounce this ball off a block if needed Note that this
-  # doesn't work in the general case. For example, in theory if the block is
-  # moving too fast the ball could get "stuck inside it".  But it works well
-  # enough for our purposes.
-  blockPong: (block) ->
-
-    # Wheter ball and block are horizontally aligned
-    xWithin = block.left() <= this.right() <= block.right() or
-      block.left() <= this.left() <= block.right() or
-      this.left() <= block.left() <= block.right() <= this.right()
-
-    # Wheter ball and block are vertically aligned
-    yWithin = block.top() <= this.bottom() <= block.bottom() or
-      block.top() <= this.top() <= block.bottom() or
-      this.top() <= block.top() <= block.bottom() <= this.bottom()
-
-    bounce  = {}
-    bounce.x = yWithin and
-      ((@xVelocity > 0 and Math.abs(@x-block.left()) <= @radius) or
-      (@xVelocity < 0 and Math.abs(@x-block.right()) <= @radius))
-
-    bounce.y = xWithin and
-      ((@yVelocity > 0 and Math.abs(@y-block.top()) <= @radius) or
-      (@yVelocity < 0 and Math.abs(@y-block.bottom()) <= @radius))
-
-    return bounce
 
   horizontalWallCollision: (maxY) ->
     this.top() <= 0 or this.bottom() >= maxY
