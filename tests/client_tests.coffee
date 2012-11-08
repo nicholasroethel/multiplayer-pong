@@ -158,11 +158,15 @@ if window?
         sock = new MockSocket
         c.start sock
         c.onInit type: 'init', data: block: 0
+        expect(game.state.blocks.length).to.be 2
 
         prev =
           state: game.cloneState c.game.state
         next =
           state: game.cloneState c.game.state
+
+        expect(prev.state.blocks.length).to.be 2
+        expect(next.state.blocks.length).to.be 2
 
         now = (new Date).getTime()
 
