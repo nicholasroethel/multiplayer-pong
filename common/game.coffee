@@ -323,10 +323,10 @@ class Ball
       block.top() <= this.top() <= block.bottom() or
       this.top() <= block.top() <= block.bottom() <= this.bottom()
 
-    # Moving right, check left border
+    bounce  = {}
     bounce.x = yWithin and
-      ((@xVelocity > 0 and Math.abs(@x-block.left() <= @radius) or
-      (@xVelocity < 0 and Math.abs(@x-block.right() <= @radius))
+      ((@xVelocity > 0 and Math.abs(@x-block.left()) <= @radius) or
+      (@xVelocity < 0 and Math.abs(@x-block.right()) <= @radius))
 
     bounce.y = xWithin and
       ((@yVelocity > 0 and Math.abs(@y-block.top()) <= @radius) or
