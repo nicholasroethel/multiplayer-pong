@@ -2,13 +2,14 @@
 <head>
   <meta charset="utf-8">
   <title>Mocha Tests</title>
-  <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
 
-  <!-- Mocha setup -->
+  <!-- Mocha -->
+  <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
   <script src="../node_modules/mocha/mocha.js"></script>
-  <script src="../node_modules/underscore/underscore.js"></script>
-  <script>mocha.setup('bdd');</script>
-  <script src="../node_modules/expect.js/expect.js"></script>
+
+  <!-- Library includes -->
+  <script src="../vendor/underscore/underscore.js"></script>
+  <script src="../vendor/expect.js/expect.js"></script>
 
   <!-- WebPongJS includes -->
   <script src="../common/game.js"></script>
@@ -20,6 +21,7 @@
   <script src="./client_tests.js"></script>
 
   <script>
+    mocha.setup('bdd');
     window.onload = function() {
       mocha.run();
     }
