@@ -150,8 +150,7 @@ class ServerGame extends Game
     # Apply all the inputs that users have sent since last update, then empty
     # all the buffers and update the input index, which is a global identifier
     # for input commands.
-    for blockId, updateEntry of @inputUpdates
-      if updateEntry.updates.length > 0
+    for blockId, updateEntry of @inputUpdates when updateEntry.updates.length > 0
         block = @state.blocks[blockId]
         for input in updateEntry.updates
           for cmd in input.buffer
