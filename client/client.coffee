@@ -1,6 +1,7 @@
 exports = window
 
 Message = exports.WebPongJSMessage
+Game = exports.WebPongJSClientGame
 
 class Client
 
@@ -10,7 +11,7 @@ class Client
     j: 74
     k: 75
 
-  constructor: (@conf, @game, board, messageBoard, scoreBoard) ->
+  constructor: (@conf, board, messageBoard, scoreBoard) ->
     @blockId = null
     @initialDrift = null
     @board = board ? document.getElementById(@conf.board.id)
@@ -22,6 +23,7 @@ class Client
       start: this.onStart,
       update: this.onUpdate,
       drop: this.onDrop
+    this.newGame()
 
   start: (@sock) ->
     @sock = @sock ? new SockJS "http://#{@conf.server.addr}:#{@conf.server.port}#{@conf.server.prefix}"
@@ -43,8 +45,13 @@ class Client
       this.send 'init', null
 
     @sock.onclose = =>
-      this.userMessage 'Server closed the connection. Refresh the page to try again'
       @game.stop()
+      this.newGame()
+      this.userMessage 'No connection with server. Refresh the page to try again'
+
+  newGame: ->
+    @game = new Game @conf
+    @game.setBlock @blockId
 
   onInit: (msg) =>
     @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
@@ -67,6 +74,7 @@ class Client
 
   onDrop: (msg) =>
     @game.stop()
+    this.newGame()
     this.userMessage 'Other player dropped. Waiting for a new player to connect'
 
   send: (msgType, msgData) ->

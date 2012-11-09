@@ -17,11 +17,7 @@ class PongServer
     @players = {}
     @httpServer = http.createServer()
     @sockServer = sockjs.createServer()
-    try
-      @game = new PongGame @config
-    catch e
-      console.error "Could not create new game using configuration #{@config}"
-      throw e
+    this.newGame()
     @handlers =
       init: this.onInit,
       input: this.onInput
@@ -59,12 +55,18 @@ class PongServer
 
   onClose: (conn) =>
     =>
-      console.log "Connection #{conn.id} closed"
       this.removePlayer conn
       this.stopUpdater()
-      @game.stop()
+      this.newGame()
       this.broadcast 'drop', null
       console.log "Game stopped, due to player connection #{conn.id} drop"
+
+  newGame: ->
+    try
+      @game = new PongGame @config
+    catch e
+      console.error "Could not create new game using configuration #{@config}"
+      throw e
 
   # Message handlers
   onInit: (conn, data) =>
@@ -103,15 +105,13 @@ class PongServer
     for cid, p of @players
       this.send p.connection, 'update',
         state: @game.state
-        inputIndex: p.inputIndex
+        inputIndex: @game.inputIndex p.block
 
   # Player management methods
   addPlayer: (conn) ->
     @players[conn.id] =
       connection: conn
       block: @availableBlockIds.pop()
-      inputUpdates: []
-      inputIndex: -1
 
   removePlayer: (conn) ->
     @availableBlockIds.push @players[conn.id].block

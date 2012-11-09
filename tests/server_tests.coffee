@@ -89,7 +89,8 @@ describe 'Server', ->
     (conn.callbacks['data']?).should.equal true
 
     s.playerCount().should.equal 1
-    s.players[conn.id].inputIndex.should.equal -1
+    s.players[conn.id].block.should.equal 1
+    s.game.inputUpdates[s.players[conn.id].block].inputIndex.should.equal -1
 
   it 'should handle closing of connections', ->
     s = new Server

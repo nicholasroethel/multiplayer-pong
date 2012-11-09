@@ -34,6 +34,7 @@ exports.WebPongJSConfig =
     xVelocity: 0.3
     yVelocity: 0.4
     color: 'black'
+    accelerationFromPaddle: 0.05
   messageBoard:
     id: 'message_board'
   scoreBoard:

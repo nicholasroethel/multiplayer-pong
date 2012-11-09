@@ -60,8 +60,7 @@ class Game
     @playIntervalId = setInterval gameUpdate, @conf.update.timerAccuracy
 
   stop: ->
-    @state = this.initialState()
-    console.log 'stop'
+    console.log 'Game stopped'
     clearInterval @playIntervalId
     @playIntervalId = null
 
@@ -84,11 +83,23 @@ class Game
       if bounce.x or bounce.y
         collision = true
         ball.moveBack timeDelta
+
         if bounce.x
           ball.horizontalPong()
         if bounce.y
           ball.verticalPong()
+
+        # Increase the ball horizontal speed based on its distance to the
+        # middle of the block -- hitting it closer the block corners will
+        # produce more acceleartion.
+        blockMiddle = block.height / 2
+        # This is a number between 0 and 1
+        distToMiddle = (Math.abs(ball.y - (block.top() + blockMiddle)) - ball.radius) / blockMiddle
+        ball.horizontalAccelerate @conf.ball.accelerationFromPaddle * distToMiddle
         ball.move timeDelta
+
+        # No need to check other block
+        break
 
     if this.horizontalWallCollision()
       collision = true
@@ -138,7 +149,7 @@ class Game
   horizontalWallCollision: ->
     @state.ball.top() <= 0 or @state.ball.bottom() >= @conf.board.size.y
 
-  # Check if the current state is a new point situation
+  # Check if the current state is a new point situation.
   # Return the number of the player which scored a point
   # 1 means point for right player
   # 0 means point for left player
@@ -177,7 +188,11 @@ class ServerGame extends Game
 
   constructor: (conf) ->
     super conf
-    @inputUpdates = []
+    @inputUpdates = [this.initialInputUpdate(), this.initialInputUpdate()]
+
+  initialInputUpdate: ->
+    updates: []
+    inputIndex: -1
 
   play: (drift) ->
     # This is the body of the server game loop.
@@ -199,7 +214,7 @@ class ServerGame extends Game
     # Apply all the inputs that users have sent since last update, then empty
     # all the buffers and update the input index, which is a global identifier
     # for input commands.
-    for blockId, updateEntry of @inputUpdates when updateEntry.updates.length > 0
+    for updateEntry, blockId in @inputUpdates when updateEntry.updates.length > 0
         block = @state.blocks[blockId]
         for input in updateEntry.updates
           for cmd in input.buffer
@@ -210,8 +225,10 @@ class ServerGame extends Game
 
   addInputUpdate: (blockId, data) ->
     # The input will be processed in the next game update loop.
-    @inputUpdates[blockId] = @inputUpdates[blockId] ? { updates: [], inputIndex: -1 }
     @inputUpdates[blockId].updates.push data
+
+  inputIndex: (blockId) ->
+    @inputUpdates[blockId].inputIndex
 
 class ClientGame extends Game
 
@@ -221,9 +238,9 @@ class ClientGame extends Game
   constructor: (conf) ->
     super conf
     @blockId = null
+    @serverUpdates = []
     @inputsBuffer = []
     @inputIndex = 0
-    @serverUpdates = []
 
   play: (drift) ->
     # This is the body of the client game loop.
@@ -261,9 +278,8 @@ class ClientGame extends Game
     # More info at:
     # https://developer.valvesoftware.com/wiki/Latency_Compensating_Methods_in_Client/Server_In-game_Protocol_Design_and_Optimization#Client_Side_Prediction
 
-    if @serverUpdates.length > 0
-      # Start from last known position
-      this.controlledBlock().y = (_.last @serverUpdates).state.blocks[@blockId].y
+    # Start from last known position
+    this.controlledBlock().y = (_.last @serverUpdates).state.blocks[@blockId].y
 
     # "Replay" all user input that is not yet acknowledged by the server
     for input in @inputsBuffer
@@ -309,6 +325,7 @@ class ClientGame extends Game
     this.publish 'point', @state.score
 
   sampleInput: (timeDelta) ->
+
     # Sample the user input, package it up and publish it.
     # The input index is a unique identifier of the input sample.
     inputs = []
@@ -409,6 +426,9 @@ class Ball
 
   moveBack: (t) ->
     this.move -t
+
+  horizontalAccelerate: (dxv) ->
+    @xVelocity += (@xVelocity > 0 ? 1 : -1) * dxv
 
   verticalPong: ->
     @yVelocity = -@yVelocity

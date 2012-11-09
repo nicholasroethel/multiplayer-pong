@@ -59,15 +59,13 @@ if window?
 
   describe 'Client', ->
 
-    createClient = (cfg, game, canvas, messageBoard, scoreBoard) ->
-      defaultConf = _.clone conf
-      defaultConf.client.interpolate = true
-      cfg = cfg ? defaultConf
-      game = game ? new Game cfg
-      canvas = canvas ? new MockCanvas conf.board.size.x, conf.board.size.y
-      messageBoard = messageBoard ? new MockMessageBoard
-      scoreBoard = scoreBoard ? new MockScoreBoard
-      new Client cfg, game, canvas, messageBoard, scoreBoard
+    createClient = () ->
+      cfg = _.clone conf
+      cfg.client.interpolate = true
+      canvas = new MockCanvas conf.board.size.x, conf.board.size.y
+      messageBoard = new MockMessageBoard
+      scoreBoard = new MockScoreBoard
+      new Client cfg, canvas, messageBoard, scoreBoard
 
     it 'should be initialized', ->
       expect(window).to.be.ok()
