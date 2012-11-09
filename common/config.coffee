@@ -1,5 +1,8 @@
 exports = exports ? this
 
+# All of these settings require restart of the server, except for the ones
+# under "client".
+
 exports.WebPongJSConfig =
   server:
     addr: '0.0.0.0',
@@ -32,3 +35,5 @@ exports.WebPongJSConfig =
     id: 'message_board'
   scoreBoard:
     id: 'score_board'
+  # demoMode means no points; ball bounces off all walls.
+  demoMode: false
