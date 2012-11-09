@@ -52,7 +52,6 @@ class PongServer
 
   onData: (conn) =>
     (msg) =>
-      console.log "Got message #{msg} from #{conn.id}"
       msg = Message.parse msg
       handler = @handlers[msg.type]
       if handler?

@@ -4,18 +4,21 @@ exports = exports ? this
 # under "client".
 
 exports.WebPongJSConfig =
+  # demoMode means no points; ball bounces off all walls.
+  demoMode: true
   server:
-    addr: '0.0.0.0',
-    port: 8089,
-    prefix: '/pong',
+    addr: '0.0.0.0'
+    port: 8089
+    prefix: '/pong'
   client:
-    interpLatency: 100, # interpolation latency interval
-    timerAccuracy: 5,
+    interpolate: true # interpolate or use naive approach
+    interpLatency: 100 # interpolation latency interval
   update:
     # milliseconds
-    interval: 20,  # Game update intervals, ms.
-    syncTime: 40,  # Server sync period
-    maxDrift: 100, # Maximum drift for each client
+    interval: 20 # Game update intervals, ms.
+    syncTime: 40 # Server sync period. Must be low when using interpolation.
+    maxDrift: 100 # Maximum drift for each client
+    timerAccuracy: 5
   board:
     id: 'board'
     size:
@@ -25,15 +28,13 @@ exports.WebPongJSConfig =
       x: 8, y: 100
     colors: ['blue', 'red']
     names: ['left', 'right']
-    velocity: 0.1
+    velocity: 0.08
   ball:
     radius: 8
-    xVelocity: 0.2
+    xVelocity: 0.3
     yVelocity: 0.4
     color: 'black'
   messageBoard:
     id: 'message_board'
   scoreBoard:
     id: 'score_board'
-  # demoMode means no points; ball bounces off all walls.
-  demoMode: false
