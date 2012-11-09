@@ -101,7 +101,6 @@ class PongServer
 
   broadcastState: =>
     @lastBroadcast = (new Date).getTime()
-    console.log "Broadcasting state"
     for cid, p of @players
       this.send p.connection, 'update',
         state: @game.state

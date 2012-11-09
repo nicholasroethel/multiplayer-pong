@@ -10,9 +10,9 @@ exports.WebPongJSConfig =
     timerAccuracy: 5,
   update:
     # milliseconds
-    interval: 20,   # Game update intervals, ms.
+    interval: 20,  # Game update intervals, ms.
     syncTime: 40,  # Server sync period
-    maxDrift: 100,  # Maximum drift for each client
+    maxDrift: 100, # Maximum drift for each client
   board:
     id: 'board'
     size:
@@ -30,3 +30,5 @@ exports.WebPongJSConfig =
     color: 'black'
   messageBoard:
     id: 'message_board'
+  scoreBoard:
+    id: 'score_board'

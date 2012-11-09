@@ -22,7 +22,7 @@
       conf = window.WebPongJSConfig
       game = new Game conf
 
-      client = new Client conf, game, document.getElementById conf.board.id
+      client = new Client conf, game
       client.start()
     </script>
 
@@ -32,7 +32,8 @@
   <body>
       <h1>WebPongJS</h1>
       <p><em>Simple pong demo</em></p>
-      <p><span id="message_board"></span></p>
+      <p><div id="message_board">Loading...</div></p>
+      <p><div id="score_board">Loading...</div></p>
       <canvas id="board" width="600" height="400" >
       Your browser needs to support canvas for this to work!
       </canvas>

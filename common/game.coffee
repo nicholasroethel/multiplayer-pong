@@ -17,12 +17,31 @@ class Game
 
   initialState: ->
     # Blocks are initially vertically centered, ball is at top right corner
-    centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
-    ball: new Ball(@conf.ball.radius + 1, @conf.ball.radius + 1, @conf.ball.radius,
-      @conf.ball.xVelocity, @conf.ball.yVelocity)
-    blocks: [(new Block 0, centerY, @conf.block.size.x, @conf.block.size.y),
-      (new Block @conf.board.size.x - @conf.block.size.x, centerY, @conf.block.size.x, @conf.block.size.y)]
+    objects = this.initialObjects()
+    ball: new Ball objects.ball.x, objects.ball.y, @conf.ball.radius, objects.ball.xVelocity, objects.ball.yVelocity
+    blocks: new Block block.x, block.y, @conf.block.size.x, @conf.block.size.y for block in objects.blocks
     lastUpdate: null
+    score: [0, 0]
+
+  initialObjects: ->
+    centerY = @conf.board.size.y / 2 - @conf.block.size.y / 2
+    ball:
+      x: @conf.ball.radius + 1
+      y: @conf.ball.radius + 1
+      xVelocity: @conf.ball.xVelocity
+      yVelocity: @conf.ball.yVelocity
+    blocks: [
+      {x: 0, y: centerY},
+      {x: @conf.board.size.x - @conf.block.size.x, y: centerY}
+    ]
+
+  resetBall: ->
+    objects = this.initialObjects()
+    @state.ball.x = objects.ball.x
+    @state.ball.y = objects.ball.y
+    @state.ball.xVelocity = objects.ball.xVelocity
+    @state.ball.yVelocity = objects.ball.yVelocity
+    this.publish 'reset', null
 
   cloneState: (other) ->
     x =
@@ -31,6 +50,7 @@ class Game
       blocks:
         b.clone() for b in other.blocks
       lastUpdate: other.lastUpdate
+      score: _.clone other.score
 
   start: (drift) ->
     drift = drift ? 0
@@ -40,6 +60,7 @@ class Game
     @playIntervalId = setInterval gameUpdate, @conf.client.timerAccuracy
 
   stop: ->
+    @state = this.initialState()
     console.log 'stop'
     clearInterval @playIntervalId
     @playIntervalId = null
@@ -47,31 +68,39 @@ class Game
   play: (drift) ->
     throw "play is not implemented in abstract base class Game"
 
-  # Collision-aware movement of the ball
-  pongMove: (timeDelta, blocks, boardX, boardY) ->
-    ball = @state.ball
+  pongMove: (timeDelta) ->
+    @state.ball.move timeDelta
+    this.collisionCheck timeDelta
 
-    ball.move timeDelta
+  # Collision check for current state
+  # Corrects the state if needed
+  collisionCheck: (timeDelta) ->
+    ball = @state.ball
+    blocks = @state.blocks
+    collision = false
 
     for block in blocks
       bounce = this.blockPong block
       if bounce.x or bounce.y
+        collision = true
         ball.moveBack timeDelta
         if bounce.x
           ball.horizontalPong()
         if bounce.y
           ball.verticalPong()
         ball.move timeDelta
-        return
 
-    if ball.horizontalWallCollision boardY
+    if this.horizontalWallCollision()
+      collision = true
       ball.moveBack timeDelta
       ball.verticalPong()
       ball.move timeDelta
-    else if ball.verticalWallCollision boardX
-      ball.moveBack timeDelta
-      ball.horizontalPong()
-      ball.move timeDelta
+
+    playerPoint = this.checkForPoint()
+    if playerPoint?
+      collision = true
+      this.onPoint playerPoint
+    return collision
 
   # Collision detect and bounce this ball off a block if needed Note that this
   # doesn't work in the general case. For example, in theory if the block is
@@ -90,22 +119,34 @@ class Game
       block.top() <= ball.top() <= block.bottom() or
       ball.top() <= block.top() <= block.bottom() <= ball.bottom()
 
-    bounce  = {}
-    bounce.x = yWithin and
-      ((ball.xVelocity > 0 and Math.abs(ball.x-block.left()) <= ball.radius) or
-      (ball.xVelocity < 0 and Math.abs(ball.x-block.right()) <= ball.radius))
-
-    bounce.y = xWithin and
-      ((ball.yVelocity > 0 and Math.abs(ball.y-block.top()) <= ball.radius) or
-      (ball.yVelocity < 0 and Math.abs(ball.y-block.bottom()) <= ball.radius))
+    bounce =
+      x: yWithin and
+        ((ball.xVelocity > 0 and Math.abs(ball.x-block.left()) <= ball.radius) or
+        (ball.xVelocity < 0 and Math.abs(ball.x-block.right()) <= ball.radius))
+      y: xWithin and
+        ((ball.yVelocity > 0 and Math.abs(ball.y-block.top()) <= ball.radius) or
+        (ball.yVelocity < 0 and Math.abs(ball.y-block.bottom()) <= ball.radius))
 
     return bounce
 
-  horizontalWallCollision: (maxY) ->
-    @state.ball.top() <= 0 or @state.ball.bottom() >= maxY
+  horizontalWallCollision: ->
+    @state.ball.top() <= 0 or @state.ball.bottom() >= @conf.board.size.y
 
-  verticalWallCollision: (maxX) ->
-    @state.ball.left() <= 0 or @state.ball.right() >= maxX
+  # Check if the current state is a new point situation
+  # Return the number of the player which scored a point
+  # 1 means point for right player
+  # 0 means point for left player
+  checkForPoint: ->
+    if @state.ball.left() <= 0
+      1
+    else if @state.ball.right() >= @conf.board.size.x
+      0
+    else
+      null
+
+  onPoint: (playerPoint) ->
+    @state.score[playerPoint] += 1
+    this.resetBall()
 
   update: (state) ->
     @state.lastUpdate = state.lastUpdate
@@ -132,6 +173,8 @@ class ServerGame extends Game
     @inputUpdates = []
 
   play: (drift) ->
+    # This is the body of the server game loop.
+
     # The server just loops through the game
     # Executing user commands if necessary
     currentTime = (new Date()).getTime()
@@ -140,9 +183,8 @@ class ServerGame extends Game
     if timeDelta >= @conf.update.interval
       # Apply all the client input from the buffer
       this.processInputs()
-
       # Run the game, and publish the update
-      this.pongMove timeDelta, @state.blocks, @conf.board.size.x, @conf.board.size.y
+      this.pongMove timeDelta
       @state.lastUpdate = currentTime
       this.publish 'update', @state
 
@@ -177,6 +219,8 @@ class ClientGame extends Game
     @serverUpdates = []
 
   play: (drift) ->
+    # This is the body of the client game loop.
+
     # Compute the game state in the past, as specified by @conf.client.latency,
     # so we can interpolate between the two server updates `currentTime` falls between.
     currentTime = (new Date).getTime() - drift - @conf.client.interpLatency
@@ -188,8 +232,8 @@ class ClientGame extends Game
       this.sampleInput timeDelta
       # Client-side input prediction
       this.inputPredict()
-      this.pongMove timeDelta, @state.blocks, @conf.board.size.x, @conf.board.size.y
       this.interpolateState currentTime
+      this.collisionCheck timeDelta
       @state.lastUpdate = currentTime
       this.publish 'update', @state
 
@@ -222,7 +266,7 @@ class ClientGame extends Game
       @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
 
     unless i?
-      console.log 'Could not interpolate'
+      console.log 'cannot interpolate'
       return
 
     prev = @serverUpdates[i-1].state
@@ -244,6 +288,9 @@ class ClientGame extends Game
     # Interpolate only the block that we are not controlling
     for block, blockId in @state.blocks when blockId isnt @blockId
       block.y = lerp prev.blocks[blockId].y, next.blocks[blockId].y, t
+
+    @state.score = prev.score
+    this.publish 'point', @state.score
 
   sampleInput: (timeDelta) ->
     # Sample the user input, package it up and publish it.
@@ -343,12 +390,6 @@ class Ball
 
   moveBack: (t) ->
     this.move -t
-
-  horizontalWallCollision: (maxY) ->
-    this.top() <= 0 or this.bottom() >= maxY
-
-  verticalWallCollision: (maxX) ->
-    this.left() <= 0 or this.right() >= maxX
 
   verticalPong: ->
     @yVelocity = -@yVelocity

@@ -10,12 +10,13 @@ class Client
     j: 74,
     k: 75,
 
-  constructor: (@conf, @game, @board) ->
+  constructor: (@conf, @game, board, messageBoard, scoreBoard) ->
     @blockId = null
-    @context = @board.getContext '2d'
-    @controlledBlock = null
     @initialDrift = null
-    @messageBoard = document.getElementById(@conf.messageBoard.id)
+    @board = board ? document.getElementById(@conf.board.id)
+    @context = @board.getContext '2d'
+    @messageBoard = messageBoard ? document.getElementById(@conf.messageBoard.id)
+    @scoreBoard = scoreBoard ? document.getElementById(@conf.scoreBoard.id)
     @callbacks =
       init: this.onInit,
       start: this.onStart,
@@ -48,14 +49,14 @@ class Client
   onInit: (msg) =>
     @initialDrift = Number(msg.data.timestamp) - (new Date).getTime()
     @blockId = msg.data.block
-    @controlledBlock = @game.state.blocks[msg.data.block]
     @game.setBlock @blockId
+    this.updateScore @game.state.score
     this.userMessage 'Waiting for other player'
 
   onStart: (msg) =>
     @game.start @initialDrift
     @game.on 'update', this.onGameUpdate
-    @game.on 'game over', this.onGameOver
+    @game.on 'point', this.onPoint
     @game.on 'input', this.onGameInput
     document.onkeydown = this.onKeyDown
     document.onkeyup = this.onKeyUp
@@ -77,16 +78,16 @@ class Client
   onKeyDown: (ev) =>
     switch ev.keyCode
       when Client.KEYS.up, Client.KEYS.k
-        @controlledBlock.movingUp = 1
+        this.controlledBlock().movingUp = 1
       when Client.KEYS.down, Client.KEYS.j
-        @controlledBlock.movingDown = 1
+        this.controlledBlock().movingDown = 1
 
   onKeyUp: (ev) =>
     switch ev.keyCode
       when Client.KEYS.up, Client.KEYS.k
-        @controlledBlock.movingUp = 0
+        this.controlledBlock().movingUp = 0
       when Client.KEYS.down, Client.KEYS.j
-        @controlledBlock.movingDown = 0
+        this.controlledBlock().movingDown = 0
 
   drawBlocks: (blocks) ->
     for b, i in blocks
@@ -114,8 +115,13 @@ class Client
     this.drawBall state.ball.x, state.ball.y
     this.drawBlocks state.blocks
 
-  onGameOver: (ev, data) =>
-    # Temp placeholder
-    window.alert 'Game over!'
+  onPoint: (ev, data) =>
+    this.updateScore data
+
+  updateScore: (data) ->
+    @scoreBoard.innerHTML = "#{data[0]} : #{data[1]}"
+
+  controlledBlock: ->
+    @game.state.blocks[@blockId]
 
 exports.WebPongJSClient = Client
