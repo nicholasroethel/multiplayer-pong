@@ -47,6 +47,9 @@ if window?
       @currentPath.filled = true
       @currentpath = null
 
+  class MockMessageBoard
+  class MockScoreBoard
+
   class MockSocket
     constructor: ->
       @buffer = []
@@ -55,56 +58,61 @@ if window?
       @buffer.push msg
 
   describe 'Client', ->
+
+    createClient = (cfg, game, canvas, messageBoard, scoreBoard) ->
+      cfg = cfg ? conf
+      game = game ? new Game cfg
+      canvas = canvas ? new MockCanvas conf.board.size.x, conf.board.size.y
+      messageBoard = messageBoard ? new MockMessageBoard
+      scoreBoard = scoreBoard ? new MockScoreBoard
+      new Client cfg, game, canvas, messageBoard, scoreBoard
+
     it 'should be initialized', ->
       expect(window).to.be.ok()
       expect(Client).to.be.ok()
       expect(Game).to.be.ok()
       expect(conf).to.be.ok()
-      canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf
-      c = new Client conf, game, canvas
+      c = createClient()
 
     it 'should draw blocks', ->
-      canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf
-      c = new Client conf, game, canvas
+      c = createClient()
       c.drawBlocks [new MockBlock 0, 2, 3, 4]
 
-      expected=[[0, 2, 3, 4]]
-      actual = canvas.rectangles
+      expected = [[0, 2, 3, 4]]
+      actual = c.board.rectangles
 
       expect(actual.length).to.be 1
       expect((_.difference actual[0], expected[0]).length).to.be 0
 
     it 'should draw the ball', ->
-      canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf
-      c = new Client conf, game, canvas
+      c = createClient()
       c.drawBall 3, 4
-      expect(canvas.paths.length).to.be 1
-      expect((_.last canvas.paths).arcs.length).to.be 1
-      expect((_.last canvas.paths).arcs[0].x).to.be 3
-      expect((_.last canvas.paths).arcs[0].y).to.be 4
+      expect(c.board.paths.length).to.be 1
+      expect((_.last c.board.paths).arcs.length).to.be 1
+      expect((_.last c.board.paths).arcs[0].x).to.be 3
+      expect((_.last c.board.paths).arcs[0].y).to.be 4
 
-      expect((_.last canvas.paths).arcs[0].radius).to.be conf.ball.radius
-      expect((_.last canvas.paths).filled).to.be true
+      expect((_.last c.board.paths).arcs[0].radius).to.be conf.ball.radius
+      expect((_.last c.board.paths).filled).to.be true
 
     it 'should draw the game state', ->
-      canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-      game = new Game conf
-      c = new Client conf, game, canvas
-      c.drawState 'update', game.state
-      expect(canvas.clearRectCalled).to.be true
-      expect(canvas.paths.length).to.be 3
-      expect((_.first canvas.paths).arcs.length).to.be 1
-      expect((_.first canvas.paths).arcs[0].x).to.be game.state.ball.x
-      expect((_.first canvas.paths).arcs[0].y).to.be game.state.ball.y
+      c = createClient()
+      c.drawState 'update', c.game.state
+      expect(c.board.clearRectCalled).to.be true
+      expect(c.board.paths.length).to.be 3
+      expect((_.first c.board.paths).arcs.length).to.be 1
+      expect((_.first c.board.paths).arcs[0].x).to.be c.game.state.ball.x
+      expect((_.first c.board.paths).arcs[0].y).to.be c.game.state.ball.y
+
+    it 'keep score', ->
+      c = createClient()
+      c.game.state.score = [3, 4]
+      c.onPoint 'point', c.game.state.score
+      expect(c.scoreBoard.innerHTML).to.be "3 : 4"
 
     describe 'interaction with server', ->
       it 'should start connection with server', ->
-        canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new Game conf
-        c = new Client conf, game, canvas
+        c = createClient()
         sock = new MockSocket
         c.start sock
         expect(c.sock).to.be sock
@@ -119,9 +127,7 @@ if window?
 
     describe 'syncrhonization', ->
       it 'should buffer server updates', ->
-        canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new Game conf
-        c = new Client conf, game, canvas
+        c = createClient()
         sock = new MockSocket
         c.start sock
 
@@ -129,41 +135,43 @@ if window?
         c.onInit type: 'init', data: block: 'left'
 
         c.onUpdate type: 'update', data:
-          state: game.state
+          state: c.game.state
           inputIndex: 0
         expect(c.game.inputsBuffer.length).to.be 3
         expect(c.game.serverUpdates.length).to.be 1
+
         c.onUpdate type: 'update', data:
-          state: game.state
+          state: c.game.state
           inputIndex: 1
         expect(c.game.inputsBuffer.length).to.be 2
         expect(c.game.serverUpdates.length).to.be 2
+
         c.onUpdate type: 'update', data:
-          state: game.state
+          state: c.game.state
           inputIndex: 2
         expect(c.game.serverUpdates.length).to.be 3
         oldUpdateCount = Game.SERVERUPDATES
+
         Game.SERVERUPDATES = 3
         c.onUpdate type: 'update', data:
-          state: game.state
+          state: c.game.state
           inputIndex: 3
         expect(c.game.serverUpdates.length).to.be 3
+
         Game.SERVERUPDATES = oldUpdateCount
         expect(c.game.serverUpdates.length).to.be 3
 
       it 'should do linear interpolation', ->
-        canvas = new MockCanvas conf.board.size.x, conf.board.size.y
-        game = new Game conf
-        c = new Client conf, game, canvas
+        c = createClient()
         sock = new MockSocket
         c.start sock
         c.onInit type: 'init', data: block: 0
-        expect(game.state.blocks.length).to.be 2
+        expect(c.game.state.blocks.length).to.be 2
 
         prev =
-          state: game.cloneState c.game.state
+          state: c.game.cloneState c.game.state
         next =
-          state: game.cloneState c.game.state
+          state: c.game.cloneState c.game.state
 
         expect(prev.state.blocks.length).to.be 2
         expect(next.state.blocks.length).to.be 2

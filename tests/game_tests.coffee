@@ -36,8 +36,7 @@ describe 'ServerGame', ->
 
   it 'should add callbacks when subscribing', ->
     g = new Game config
-    myCallback = (ev, data) ->
-      42
+    myCallback = (ev, data) -> 42
     g.on 'update', myCallback
     ('update' of g.callbacks).should.equal true
     g.callbacks['update'].length.should.equal 1
@@ -51,12 +50,10 @@ describe 'ServerGame', ->
     oldLastUpdate = g.state.lastUpdate
     calledDone = false
     myCallback = (ev, newState) ->
-      if not calledDone
-        ev.should.equal 'update'
-        newState.lastUpdate.should.be.above oldLastUpdate
-        done()
-        # Avoid calling done() multiple times
-        calledDone = true
+      ev.should.equal 'update'
+      newState.lastUpdate.should.be.above oldLastUpdate
+      done()
+      g.stop()
     g.on 'update', myCallback
     g.start()
 
@@ -123,40 +120,45 @@ describe 'ServerGame', ->
       bounce.x.should.equal false
       bounce.y.should.equal false
 
-  describe 'should do horizontall wall collision check:', ->
+  describe 'should do horizontal wall collision check:', ->
+
     it 'top', ->
-      ball = new Ball 0, 18, 3, 0.3, 0.4
+      ball = new Ball 0, config.board.size.y - 3, 3, 0.3, 0.4
       g = new Game config
       g.state.ball = ball
-      g.horizontalWallCollision(20).should.equal true
+      g.horizontalWallCollision().should.equal true
+
     it 'bottom', ->
       ball = new Ball 0, 2, 3, 0.3, 0.4
       g = new Game config
       g.state.ball = ball
-      g.horizontalWallCollision(20).should.equal true
+      g.horizontalWallCollision().should.equal true
+
     it 'no collision', ->
-      ball = new Ball 0, 16.99, 3, 0.3, 0.4
+      ball = new Ball 0, config.board.size.y - 3.01, 3, 0.3, 0.4
       g = new Game config
       g.state.ball = ball
-      g.horizontalWallCollision(20).should.equal false
+      g.horizontalWallCollision().should.equal false
 
   describe 'vertical wall collision check', ->
+
     it 'left', ->
       ball = new Ball 0, 10, 3, 0.3, 0.4
       g = new Game config
       g.state.ball = ball
-      g.verticalWallCollision(20).should.equal true
+      g.checkForPoint().should.equal 1
+
     it 'right', ->
-      ball = new Ball 0, 18, 3, 0.3, 0.4
+      ball = new Ball config.board.size.x, 3, 0.3, 0.4
       g = new Game config
       g.state.ball = ball
-      g.verticalWallCollision(20).should.equal true
+      g.checkForPoint().should.equal 0
+
     it 'ok', ->
       ball = new Ball 3.001, 16.999, 3, 0.3, 0.4
       g = new Game config
       g.state.ball = ball
-      g.verticalWallCollision(20).should.equal false
-
+      should.strictEqual g.checkForPoint(), null
 
 describe 'Ball', ->
 
@@ -167,6 +169,7 @@ describe 'Ball', ->
     ball.radius.should.equal 3
     ball.xVelocity.should.equal 0.3
     ball.yVelocity.should.equal 0.4
+
   it 'should pong vertically', ->
     ball = new Ball 0, 10, 3, 0.3, 0.4
     ball.verticalPong()
