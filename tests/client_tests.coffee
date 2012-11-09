@@ -60,7 +60,9 @@ if window?
   describe 'Client', ->
 
     createClient = (cfg, game, canvas, messageBoard, scoreBoard) ->
-      cfg = cfg ? conf
+      defaultConf = _.clone conf
+      defaultConf.client.interpolate = true
+      cfg = cfg ? defaultConf
       game = game ? new Game cfg
       canvas = canvas ? new MockCanvas conf.board.size.x, conf.board.size.y
       messageBoard = messageBoard ? new MockMessageBoard

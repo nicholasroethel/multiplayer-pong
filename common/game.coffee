@@ -57,7 +57,7 @@ class Game
     @state.lastUpdate = (new Date).getTime() - drift
     gameUpdate = =>
       this.play drift
-    @playIntervalId = setInterval gameUpdate, @conf.client.timerAccuracy
+    @playIntervalId = setInterval gameUpdate, @conf.update.timerAccuracy
 
   stop: ->
     @state = this.initialState()
@@ -159,6 +159,7 @@ class Game
     @state.ball.update state.ball
     for b, i in @state.blocks
       b.update state.blocks[i]
+    @state.score = _.clone state.score
     this.publish 'update', @state
 
   on: (event, callback) ->
@@ -227,9 +228,13 @@ class ClientGame extends Game
   play: (drift) ->
     # This is the body of the client game loop.
 
-    # Compute the game state in the past, as specified by @conf.client.latency,
-    # so we can interpolate between the two server updates `currentTime` falls between.
-    currentTime = (new Date).getTime() - drift - @conf.client.interpLatency
+    currentTime = (new Date).getTime() - drift
+    if @conf.client.interpolate
+      # Compute the game state in the past, as specified by
+      # @conf.client.latency, so we can interpolate between the two server
+      # updates `currentTime` falls between.
+      currentTime -= @conf.client.interpLatency
+
     timeDelta = currentTime - @state.lastUpdate
 
     # Time to update.
@@ -238,8 +243,11 @@ class ClientGame extends Game
       this.sampleInput timeDelta
       # Client-side input prediction
       this.inputPredict()
-      this.interpolateState currentTime
-      this.collisionCheck timeDelta
+      if @conf.client.interpolate
+        this.interpolateState currentTime
+        this.collisionCheck timeDelta
+      else
+        this.pongMove timeDelta
       @state.lastUpdate = currentTime
       this.publish 'update', @state
 
@@ -261,6 +269,8 @@ class ClientGame extends Game
     for input in @inputsBuffer
       for dir in input.buffer
         this.controlledBlock().move dir, input.duration, @conf.board.size.y
+        unless @conf.client.interpolate
+          input.buffer = []
 
   interpolateState: (now) ->
     updateCount = @serverUpdates.length
@@ -317,12 +327,15 @@ class ClientGame extends Game
       this.publish 'input', inputEntry
 
   addServerUpdate: (update) ->
-    # Buffer up an update that the server has sent us
-    @serverUpdates.push update
+    if @conf.client.interpolate
+      # Buffer up an update that the server has sent us
+      @serverUpdates.push update
 
-    # Keep only the last `ClientGame.SERVERUPDATES` server updates
-    if @serverUpdates.length > ClientGame.SERVERUPDATES
-      @serverUpdates.splice(0, 1)
+      # Keep only the last `ClientGame.SERVERUPDATES` server updates
+      if @serverUpdates.length > ClientGame.SERVERUPDATES
+        @serverUpdates.splice(0, 1)
+    else
+      this.update update.state
 
     # Forget about input actions that the server has acknowledged
     this.discardAcknowledgedInput update
