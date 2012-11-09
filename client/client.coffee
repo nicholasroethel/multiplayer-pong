@@ -5,10 +5,10 @@ Message = exports.WebPongJSMessage
 class Client
 
   @KEYS:
-    up: 38,
-    down: 40,
-    j: 74,
-    k: 75,
+    up: 38
+    down: 40
+    j: 74
+    k: 75
 
   constructor: (@conf, @game, board, messageBoard, scoreBoard) ->
     @blockId = null
