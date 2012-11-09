@@ -99,7 +99,13 @@ class Game
     playerPoint = this.checkForPoint()
     if playerPoint?
       collision = true
-      this.onPoint playerPoint
+      if @conf.demoMode
+        ball.moveBack timeDelta
+        ball.horizontalPong()
+        ball.move timeDelta
+      else
+        this.onPoint playerPoint
+
     return collision
 
   # Collision detect and bounce this ball off a block if needed Note that this
@@ -266,7 +272,7 @@ class ClientGame extends Game
       @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
 
     unless i?
-      console.log 'cannot interpolate'
+      console.log "Cannot interpolate. Lag #{now}, last server update at #{(_.last @serverUpdates).state.lastUpdate}"
       return
 
     prev = @serverUpdates[i-1].state
@@ -318,7 +324,7 @@ class ClientGame extends Game
     if @serverUpdates.length > ClientGame.SERVERUPDATES
       @serverUpdates.splice(0, 1)
 
-    # Forget about updates that the server has acknowledged
+    # Forget about input actions that the server has acknowledged
     this.discardAcknowledgedInput update
 
   discardAcknowledgedInput: (serverUpdate) ->
