@@ -278,8 +278,10 @@ class ClientGame extends Game
     # More info at:
     # https://developer.valvesoftware.com/wiki/Latency_Compensating_Methods_in_Client/Server_In-game_Protocol_Design_and_Optimization#Client_Side_Prediction
 
-    # Start from last known position
-    this.controlledBlock().y = (_.last @serverUpdates).state.blocks[@blockId].y
+    # If we're not interpolating, we use our local position to start prediction
+    if @conf.client.interpolate
+      # Start from last known position
+      this.controlledBlock().y = (_.last @serverUpdates).state.blocks[@blockId].y
 
     # "Replay" all user input that is not yet acknowledged by the server
     for input in @inputsBuffer

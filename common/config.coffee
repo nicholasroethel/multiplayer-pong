@@ -5,13 +5,13 @@ exports = exports ? this
 
 config =
   # demoMode means no points; ball bounces off all walls.
-  demoMode: true
+  demoMode: false
   server:
     addr: '0.0.0.0'
     port: 8089
     prefix: '/pong'
   client:
-    interpolate: true # interpolate or use naive approach
+    interpolate: true  # interpolate or use naive approach
     interpLatency: 100 # interpolation latency interval
   update:
     # milliseconds
