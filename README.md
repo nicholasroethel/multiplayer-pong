@@ -30,7 +30,10 @@ Config File
 Most of the parameters in the project can be configured by editing the
 `common/config.coffee` file.
 
-For example you can turn of interpolation by setting `client.interpolate` to `false`.
+By default `demoMode` is `true`, which means that there are no
+points and the ball just bounces off of vertical walls, too.
+
+You can turn of interpolation by setting `client.interpolate` to `false`.
 
 Known Issues
 ------------
