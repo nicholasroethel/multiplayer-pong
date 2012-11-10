@@ -30,8 +30,9 @@ Config File
 Most of the parameters in the project can be configured by editing the
 `common/config.coffee` file.
 
-By default `demoMode` is `true`, which means that there are no
-points and the ball just bounces off of vertical walls, too.
+By default `demoMode` is `true`, which means that there are no points and the
+ball just bounces off of vertical walls, too. This is useful for illustrating
+the synchronization without having to move blocks in 2 browsers.
 
 You can turn of interpolation by setting `client.interpolate` to `false`.
 
