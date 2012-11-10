@@ -314,8 +314,9 @@ class ClientGame extends Game
     # between the two neighbouring updates.
     t = (now - prev.lastUpdate) / (next.lastUpdate - prev.lastUpdate)
 
-    @state.ball.x = lerp prev.ball.x, next.ball.x, t
-    @state.ball.y = lerp prev.ball.y, next.ball.y, t
+    if Math.max(Math.abs(prev.ball.x - next.ball.x), Math.abs(prev.ball.y - next.ball.y)) <= @conf.client.maxInterp
+      @state.ball.x = lerp prev.ball.x, next.ball.x, t
+      @state.ball.y = lerp prev.ball.y, next.ball.y, t
 
     # Interpolate only the block that we are not controlling
     for block, blockId in @state.blocks when blockId isnt @blockId

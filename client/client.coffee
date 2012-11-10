@@ -15,6 +15,8 @@ class Client
     @blockId = null
     @initialDrift = null
     @board = board ? document.getElementById(@conf.board.id)
+    @board.setAttribute('width', @conf.board.size.x)
+    @board.setAttribute('height', @conf.board.size.y)
     @context = @board.getContext '2d'
     @messageBoard = messageBoard ? document.getElementById(@conf.messageBoard.id)
     @scoreBoard = scoreBoard ? document.getElementById(@conf.scoreBoard.id)

@@ -10,6 +10,7 @@ if window?
 
   class MockCanvas
     constructor: ->
+      @attrs = {}
       @paths = []
       @rectangles = []
       @contexts = {
@@ -46,6 +47,9 @@ if window?
     fill: ->
       @currentPath.filled = true
       @currentpath = null
+
+    setAttribute: (attr, val) ->
+      @attrs[attr] = val
 
   class MockMessageBoard
   class MockScoreBoard
@@ -194,6 +198,7 @@ if window?
 
         c.game.state.blocks[0].y = 325
 
+        c.conf.client.maxInterp = 200
         c.game.interpolateState now
 
         expect(c.game.state.blocks[0].y).to.be 325

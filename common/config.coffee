@@ -3,7 +3,7 @@ exports = exports ? this
 # All of these settings require restart of the server, except for the ones
 # under "client".
 
-exports.WebPongJSConfig =
+config =
   # demoMode means no points; ball bounces off all walls.
   demoMode: true
   server:
@@ -22,7 +22,7 @@ exports.WebPongJSConfig =
   board:
     id: 'board'
     size:
-      x: 600, y: 400
+      x: 500, y: 300
   block:
     size:
       x: 8, y: 100
@@ -30,12 +30,16 @@ exports.WebPongJSConfig =
     names: ['left', 'right']
     velocity: 0.08
   ball:
-    radius: 8
-    xVelocity: 0.3
-    yVelocity: 0.4
+    radius: 6
+    xVelocity: 0.4
+    yVelocity: 0.15
     color: 'black'
     accelerationFromPaddle: 0.05
   messageBoard:
     id: 'message_board'
   scoreBoard:
     id: 'score_board'
+
+config.client.maxInterp = config.ball.radius * 5
+
+exports.WebPongJSConfig = config
