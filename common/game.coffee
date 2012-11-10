@@ -13,7 +13,6 @@ class Game
     @state = this.initialState()
     @callbacks = {}
     @playIntervalId = null
-    @currentTime = (new Date()).getTime()
 
   initialState: ->
     # Blocks are initially vertically centered, ball is at top right corner

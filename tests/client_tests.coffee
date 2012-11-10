@@ -7,7 +7,6 @@ if window?
   class MockBlock
     constructor: (@x, @y, @width, @height) ->
 
-
   class MockCanvas
     constructor: ->
       @attrs = {}
@@ -115,6 +114,7 @@ if window?
       expect(c.scoreBoard.innerHTML).to.be "3 : 4"
 
     describe 'interaction with server', ->
+
       it 'should start connection with server', ->
         c = createClient()
         sock = new MockSocket
@@ -129,7 +129,8 @@ if window?
         expect(msg.type).to.be 'init'
         expect(msg.data).to.be ''
 
-    describe 'syncrhonization', ->
+    describe 'synchronization', ->
+
       it 'should buffer server updates', ->
         c = createClient()
         sock = new MockSocket
