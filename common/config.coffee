@@ -5,7 +5,7 @@ exports = exports ? this
 
 config =
   # demoMode means no points; ball bounces off all walls.
-  demoMode: false
+  demoMode: true
   server:
     addr: '0.0.0.0'
     port: 8089

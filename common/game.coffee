@@ -88,13 +88,14 @@ class Game
         if bounce.y
           ball.verticalPong()
 
-        # Increase the ball horizontal speed based on its distance to the
-        # middle of the block -- hitting it closer the block corners will
-        # produce more acceleartion.
-        blockMiddle = block.height / 2
-        # This is a number between 0 and 1
-        distToMiddle = (Math.abs(ball.y - (block.top() + blockMiddle)) - ball.radius) / blockMiddle
-        ball.horizontalAccelerate @conf.ball.accelerationFromPaddle * distToMiddle
+        unless @conf.demoMode
+          # Increase the ball horizontal speed based on its distance to the
+          # middle of the block -- hitting it closer the block corners will
+          # produce more acceleartion.
+          blockMiddle = block.height / 2
+          # This is a number between 0 and 1
+          distToMiddle = (Math.abs(ball.y - (block.top() + blockMiddle)) - ball.radius) / blockMiddle
+          ball.horizontalAccelerate @conf.ball.accelerationFromPaddle * distToMiddle
         ball.move timeDelta
 
         # No need to check other block
