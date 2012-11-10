@@ -300,7 +300,7 @@ class ClientGame extends Game
       @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
 
     unless i?
-      console.log "Cannot interpolate. Lag #{now}, last server update at #{(_.last @serverUpdates).state.lastUpdate}"
+      console.log "Cannot interpolate. Client time #{now}, last server update at #{(_.last @serverUpdates).state.lastUpdate}"
       return
 
     prev = @serverUpdates[i-1].state
