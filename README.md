@@ -7,6 +7,8 @@ game is synchronized by the server for the 2 clients.
 The interesting part in it is that it uses linear interpolation and input
 prediction for smoother synchronization of the clients with the server.
 
+See also Known Issues
+
 Run
 ----------
 
@@ -37,8 +39,8 @@ Known Issues
    trying to make the blocks too wide, the ball too fast and/or the ball too
    big :) The collision detection and bouncing will break.
 
-2. When doing interpolation, the "bouncing ball problem" is not solved, i.e. on
-   higher speeds you won't see the ball hitting the wall:
+2. When doing interpolation, the "bouncing ball problem" is not solved, i.e. it is common
+   for you to not see the ball hitting the wall:
 
          x      |
            o    |
