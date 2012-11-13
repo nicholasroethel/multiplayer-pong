@@ -431,7 +431,10 @@ class Ball
     this.move -t
 
   horizontalAccelerate: (dxv) ->
-    @xVelocity += (@xVelocity > 0 ? 1 : -1) * dxv
+    if @xVelocity > 0
+      @xVelocity += dxv
+    else
+      @xVelocity -= dxv
 
   verticalPong: ->
     @yVelocity = -@yVelocity
