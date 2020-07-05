@@ -1,4 +1,4 @@
-webpongjs
+Multiplayer Pong
 =========
 
 This is a simple pong demo using coffeescript, Node.js and sockjs. The pong
@@ -7,7 +7,7 @@ game is synchronized by the server for the 2 clients.
 The interesting part in it is that it uses linear interpolation and input
 prediction for smoother synchronization of the clients with the server.
 
-See also Known Issues
+Please see the Known Issues Section below
 
 Run
 ----------
@@ -15,8 +15,8 @@ Run
 
 Here's how I run it
 
-1. `git clone https://github.com/emou/webpongjs.git`
-2. `cd webpongjs`
+1. `git clone https://github.com/nicholasroethel/multiplayer-pong.git`
+2. `cd multiplayer-pong`
 3. `make install-modules` (first run only)
 4. `make compile` (`make wcompile` if you'll be making changes)
 5. `make run-server`
