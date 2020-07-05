@@ -255,19 +255,21 @@ class ClientGame extends Game
     timeDelta = currentTime - @state.lastUpdate
 
     # Time to update.
+
     if timeDelta >= @conf.update.interval
+    
       # Get any input from the client, send to server
       this.sampleInput timeDelta
+
       # Client-side input prediction
       this.inputPredict()
+
+      # if statements that check for wether or not we should interpolate
       if @conf.client.interpolate
-        # change this value to the value that you would like to use
-        # to interpolate call 'this.interpolateState currentTime'
-        # for regulat update call this.regularStateUpdate currentTime`
-        this.regularStateUpdate currentTime
+        this.interpolateState currentTime
         this.collisionCheck timeDelta
       else
-        this.pongMove timeDelta
+        this.regularStateUpdate timeDelta
       @state.lastUpdate = currentTime
       this.publish 'update', @state
 
