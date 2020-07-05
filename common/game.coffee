@@ -261,7 +261,10 @@ class ClientGame extends Game
       # Client-side input prediction
       this.inputPredict()
       if @conf.client.interpolate
-        this.interpolateState currentTime
+        # change this value to the value that you would like to use
+        # to interpolate call 'this.interpolateState currentTime'
+        # for regulat update call this.regularStateUpdate currentTime`
+        this.regularStateUpdate currentTime
         this.collisionCheck timeDelta
       else
         this.pongMove timeDelta
@@ -323,6 +326,40 @@ class ClientGame extends Game
     # Interpolate only the block that we are not controlling
     for block, blockId in @state.blocks when blockId isnt @blockId
       block.y = lerp prev.blocks[blockId].y, next.blocks[blockId].y, t
+
+    @state.score = prev.score
+    this.publish 'point', @state.score
+
+  regularStateUpdate: (now) ->
+    updateCount = @serverUpdates.length
+    if updateCount < 2
+      return
+
+    # Find the 2 updates `now` falls between.
+    i = _.find [1..updateCount-1], (i) =>
+      @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
+
+    unless i?
+      console.log "Cannot interpolate. Client time #{now}, last server update at #{(_.last @serverUpdates).state.lastUpdate}"
+      return
+
+    prev = @serverUpdates[i-1].state
+    next = @serverUpdates[i].state
+
+
+    # Compute the time difference that will be used 
+    # This is a number between 0 and 1
+    # It represents the time passed between now and the last update
+    t = (now - prev.lastUpdate) / (next.lastUpdate - prev.lastUpdate)
+
+    # Update the ball state - without interopolation
+    if Math.max(Math.abs(prev.ball.x - next.ball.x), Math.abs(prev.ball.y - next.ball.y)) <= @conf.client.maxInterp
+      @state.ball.x = next.ball.x
+      @state.ball.y = next.ball.y
+
+    # Update block that we are not controlling - without interpolation
+    for block, blockId in @state.blocks when blockId isnt @blockId
+      block.y = next.blocks[blockId].y
 
     @state.score = prev.score
     this.publish 'point', @state.score
