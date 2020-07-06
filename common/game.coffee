@@ -266,15 +266,12 @@ class ClientGame extends Game
 
       # if statements that check for how we should interpolate
       if !@conf.client.interpolate
-        alert "none"
         this.noInterpolation currentTime
         this.collisionCheck timeDelta
       else if @conf.client.optimizedLinearInterpolate
-        alert "opt"
         this.optimizedLinearInterpolation currentTime
         this.collisionCheck timeDelta
       else if @conf.client.regularLinearInterpolate
-        alert "reg"
         this.regularLinearInterpolation currentTime
         this.collisionCheck timeDelta
 
