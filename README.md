@@ -50,7 +50,7 @@ the synchronization without having to move blocks in 2 browsers.
     regularLinearInterpolate: true
     optimizedLinearInterpolate: false
 
-### Config Settings for Optimized Linear Interpolation: 
+### Config Settings for Optimized Linear Interpolation
     interpolate: true
     regularLinearInterpolate: false
     optimizedLinearInterpolate: true
