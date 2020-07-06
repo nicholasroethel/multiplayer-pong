@@ -264,12 +264,20 @@ class ClientGame extends Game
       # Client-side input prediction
       this.inputPredict()
 
-      # if statements that check for wether or not we should interpolate
-      if @conf.client.interpolate
-        this.interpolateState currentTime
+      # if statements that check for how we should interpolate
+      if !@conf.client.interpolate
+        alert "none"
+        this.noInterpolation currentTime
         this.collisionCheck timeDelta
-      else
-        this.regularStateUpdate timeDelta
+      else if @conf.client.optimizedLinearInterpolate
+        alert "opt"
+        this.optimizedLinearInterpolation currentTime
+        this.collisionCheck timeDelta
+      else if @conf.client.regularLinearInterpolate
+        alert "reg"
+        this.regularLinearInterpolation currentTime
+        this.collisionCheck timeDelta
+
       @state.lastUpdate = currentTime
       this.publish 'update', @state
 
@@ -295,7 +303,7 @@ class ClientGame extends Game
         unless @conf.client.interpolate
           input.buffer = []
 
-  interpolateState: (now) ->
+  regularLinearInterpolation: (now) ->
     updateCount = @serverUpdates.length
     if updateCount < 2
       return
@@ -311,10 +319,14 @@ class ClientGame extends Game
     prev = @serverUpdates[i-1].state
     next = @serverUpdates[i].state
 
-    # Linearly interpolate the position of the ball in an attempt to smooth
-    # movement for the clients
+    # Un-optimized linear interpolation of the position of the ball in an attempt to smooth
+    # movement for the clients. 
+    # This is the imprecise method which does not guarantee v is v1 when t is 1
+    # due to floating-point arithmetic error
+    # This form may be used when the hardware has a native fused multiply-add instruction.
+    # Source: https://en.wikipedia.org/wiki/Linear_interpolation
     lerp = (p, n, t) ->
-      p + (n - p) * Math.max(Math.min(t, 1), 0)
+      p + t * (n - p)
 
     # Compute the fraction used for interpolation. This is a number between 0
     # and 1 that represents the fraction of time passed (at the current moment, `now`)
@@ -332,7 +344,47 @@ class ClientGame extends Game
     @state.score = prev.score
     this.publish 'point', @state.score
 
-  regularStateUpdate: (now) ->
+  optimizedLinearInterpolation: (now) ->
+    updateCount = @serverUpdates.length
+    if updateCount < 2
+      return
+
+    # Find the 2 updates `now` falls between.
+    i = _.find [1..updateCount-1], (i) =>
+      @serverUpdates[i-1].state.lastUpdate <= now <= @serverUpdates[i].state.lastUpdate
+
+    unless i?
+      console.log "Cannot interpolate. Client time #{now}, last server update at #{(_.last @serverUpdates).state.lastUpdate}"
+      return
+
+    prev = @serverUpdates[i-1].state
+    next = @serverUpdates[i].state
+
+    # Optimized linear interpolation of the position of the ball in an attempt to smooth
+    # movement for the clients. 
+    # This is the precise method that guarantees v is v1 when t is 1.
+    # However, it can not be used when the hardware has a native fused multiply-add instruction.
+    # Source: https://en.wikipedia.org/wiki/Linear_interpolation
+    lerp = (p, n, t) ->
+      (1 - t) * p + (t * n)
+
+    # Compute the fraction used for interpolation. This is a number between 0
+    # and 1 that represents the fraction of time passed (at the current moment, `now`)
+    # between the two neighbouring updates.
+    t = (now - prev.lastUpdate) / (next.lastUpdate - prev.lastUpdate)
+
+    if Math.max(Math.abs(prev.ball.x - next.ball.x), Math.abs(prev.ball.y - next.ball.y)) <= @conf.client.maxInterp
+      @state.ball.x = lerp prev.ball.x, next.ball.x, t
+      @state.ball.y = lerp prev.ball.y, next.ball.y, t
+
+    # Interpolate only the block that we are not controlling
+    for block, blockId in @state.blocks when blockId isnt @blockId
+      block.y = lerp prev.blocks[blockId].y, next.blocks[blockId].y, t
+
+    @state.score = prev.score
+    this.publish 'point', @state.score
+
+  noInterpolation: (now) ->
     updateCount = @serverUpdates.length
     if updateCount < 2
       return
