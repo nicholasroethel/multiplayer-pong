@@ -14,6 +14,10 @@ works for the edge case where exactly 1 interval has passed.
 Both interpolation methods have the ability to predict input and create a smooth
 synchronization between the clients and the server. 
 
+Note: this repo was originally forked from: https://github.com/emou/webpongjs,
+but has been modified to better demonstrate the various ways of dealing with
+gamestate and lag compensation. 
+
 Run
 ----------
 
