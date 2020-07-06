@@ -11,7 +11,9 @@ config =
     port: 8089
     prefix: '/pong'
   client:
-    interpolate: true  # interpolate or use naive approach
+    interpolate: true
+    regularLinearInterpolate: false
+    optimizedLinearInterpolate: true
     interpLatency: 100 # interpolation latency interval
   update:
     # milliseconds
