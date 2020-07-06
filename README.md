@@ -1,28 +1,30 @@
 Multiplayer Pong
 =========
 
-This is a simple pong demo using coffeescript, Node.js and sockjs. The pong
-game is synchronized by the server for the 2 clients.
+This is a very basic implementation of the original pong game written in coffeescript,
+NodeJS and SockJS. 
 
-The interesting part in it is that it uses linear interpolation and input
-prediction for smoother synchronization of the clients with the server.
+The 2 clients rely on the server for state synchronization, and the way the states 
+are synced can be changed within the config file. 
 
-Please see the Known Issues Section below
+The user can pick the basic naive approach (no interpolation between states), a basic
+linear interpolation approach, or a more advanced and more optimized approach that 
+works for the edge case where exactly 1 interval has passed. 
+
+Both interpolation methods have the ability to predict input and create a smooth
+synchronization between the clients and the server. 
 
 Run
 ----------
 
-
-Here's how I run it
+How to run the game:
 
 1. `git clone https://github.com/nicholasroethel/multiplayer-pong.git`
 2. `cd multiplayer-pong`
-3. `make install-modules` (first run only)
-4. `make compile` (`make wcompile` if you'll be making changes)
+3. `make install-modules` if it's your first time running
+4. `make compile` or `make wcompile` to autocompile changes
 5. `make run-server`
-6. Open `./client/pong-client.html` in 2 browsers
-
-NOTE: Only tested in the following browsers: Firefox 16, Chrome 23 and Safari 5.1.6.
+6. Open `./client/pong-client.html` in at least 2 browser tabs
 
 Config File
 -----------
@@ -34,40 +36,32 @@ By default `demoMode` is `true`, which means that there are no points and the
 ball just bounces off of vertical walls, too. This is useful for illustrating
 the synchronization without having to move blocks in 2 browsers.
 
-You can turn of interpolation by setting `client.interpolate` to `false`.
+### Config Settings for the Naive Approach (No Interpolation) 
+    interpolate: false
+    regularLinearInterpolate: false
+    optimizedLinearInterpolate: false
+
+### Config Settings for Basic Linear Interpolation 
+    interpolate: true
+    regularLinearInterpolate: true
+    optimizedLinearInterpolate: false
+
+### Config Settings for Optimized Linear Interpolation: 
+    interpolate: true
+    regularLinearInterpolate: false
+    optimizedLinearInterpolate: true
+
+### Playing Around With Latency
+
+When using either the basic or optimized linear interpolation approaches, one has the ability to change
+the latency that has been introduced to the game. This can be used to see how the interpolation effects
+different latencties. 
+
+Note: please see the known issues section (below) for guidelines
 
 Known Issues
 ------------
 
-1. It is not recommended to make arbitrary changes to the config file such as
-   trying to make the blocks too wide, the ball too fast and/or the ball too
-   big :) The collision detection and bouncing will break.
-
-2. When doing interpolation, the "bouncing ball problem" is not solved, i.e. it is common
-   for you to not see the ball hitting the wall:
-
-         x      |
-           o    |
-             x  |
-               o|
-             x  |
-           o    |
-         x      |
-
-   Instead you could see something like this when interpolating based only on the
-   updates marked with 'x'
-
-         x     |
-           o   |
-            x  |
-            o  |
-            x  |
-           o   |
-         x     |
-
-
-3. There is no timeout between points, i.e. the ball is immediately reset to
-   the starting position and the game is restarted.  As it's not trivial to
-   syncrhonize the timeout, I've ignored it for the moment.
-
-4. One game per server.
+1. Setting the interpolation latency to be very low causes the game to break (i.e. 0 or 1 don't work
+and we wouldn't reccomend going below 30ms). Also latencies over 500 have not been tested
+2. Setting the ball speed to be really high breaks the game
