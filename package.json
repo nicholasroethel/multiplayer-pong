@@ -1,8 +1,8 @@
 {
-  "name" : "WebPongJS",
-  "description" : "Simple pong game",
+  "name": "WebPongJS",
+  "description": "Simple pong game",
   "version": "0.0.0",
-  "dependencies" : [
+  "dependencies": [
     "coffee-script",
     "sockjs",
     "sockjs-client",
@@ -12,5 +12,9 @@
     "expect.js",
     "mocha",
     "should"
-  ]
+  ],
+  "scripts": {
+    "start": "open client/pong-client.html"
+  }
 }
+

@@ -31,6 +31,7 @@ class PongServer
     @sockServer.on 'connection', this.onConnection
     @httpServer.on 'error', (e) =>
       console.error "Error running http server on #{@config.server.addr}:#{@config.server.port} #{e}"
+    console.log "Running on #{@config.server.addr}:#{@config.server.port}"
     @httpServer.listen @config.server.port, @config.server.addr
 
   # SockJS connection handlers
