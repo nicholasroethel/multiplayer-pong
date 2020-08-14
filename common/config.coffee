@@ -8,7 +8,7 @@ config =
   demoMode: true
   server:
     addr: '0.0.0.0'
-    port: 8089
+    port: process.env.port || 8089
     prefix: '/pong'
   client:
     interpolate: false
