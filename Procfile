@@ -1,1 +1,1 @@
-web: make run-server
+web: node server/pong-server.js
