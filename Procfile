@@ -1,1 +1,1 @@
-web: node server/pong-server.js
+web: node index.js
