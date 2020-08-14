@@ -9,11 +9,11 @@
 
   _ = require('underscore');
 
-  pongGame = require('./common/game');
+  pongGame = require('./game');
 
-  config = require('./common/config');
+  config = require('./config');
 
-  message = require('./common/message');
+  message = require('./message');
 
   PongGame = pongGame.WebPongJSServerGame;
 
