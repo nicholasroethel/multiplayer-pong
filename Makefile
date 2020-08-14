@@ -21,5 +21,8 @@ wcompile:
 
 fast-run: install-modules compile run-server
 
+open: 
+	open client/pong-client.html
+
 test:
 	$(MOCHA) --reporter list --compilers coffee:coffee-script --watch $(TESTS)
